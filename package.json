@@ -1,0 +1,13 @@
+{
+  "name": "cipher-lab-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cipher Lab — interactive game-feel prototype (5 modes: Reflex Drill, Story Chunk, Side-Scroll Run, Head-to-Head Duel, Boss Raid)",
+  "scripts": {
+    "dev": "npx serve -s .",
+    "build": "echo 'Static site — no build needed'"
+  },
+  "keywords": ["cipher", "game", "education", "morse", "puzzle"],
+  "author": "Cipher Lab team",
+  "license": "MIT"
+}
