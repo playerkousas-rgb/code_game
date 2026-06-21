@@ -1094,6 +1094,8 @@ function startStage() {
   ADV.stageStartScore = ADV.score;
   ADV.promptInStage = 0;
   ADV.awaitingNext = false;
+  ADV.currentPrompt = null;
+  ADV.enemySpawnTime = performance.now();
   spawnEnemy();
   nextPrompt();
 }
@@ -1168,12 +1170,12 @@ function buildTarget(length, weakList) {
 function nextPrompt() {
   const stage = STAGES[ADV.stage];
   if (ADV.lives <= 0) {
-    // Lose - end adventure
     endAdventure('lose');
     return;
   }
-  if (ADV.promptInStage >= stage.promptsPerStage) {
-    // Stage complete!
+  // Check stage complete — use ADV.promptsPerStage (speed-dependent)
+  if (ADV.promptInStage >= ADV.promptsPerStage) {
+    ADV.currentPrompt = null;
     advanceStage();
     return;
   }
@@ -1184,6 +1186,7 @@ function nextPrompt() {
   const encoded = encodeToCipher(target, cipher);
   ADV.currentPrompt = { cipher, target, encoded };
   ADV.promptStartTime = performance.now();
+  ADV.enemySpawnTime = performance.now();
 
   document.getElementById('adv-cipher-label').textContent = cipher.toUpperCase();
   const promptEl = document.getElementById('adv-prompt');
@@ -1192,7 +1195,9 @@ function nextPrompt() {
   document.getElementById('adv-frame').classList.remove('correct','wrong');
   document.getElementById('adv-input').value = '';
   document.getElementById('adv-input').focus();
-  startBar(stage.maxT);
+  // Use speed-dependent maxT
+  startBar(ADV.enemyMaxT);
+  startEnemyMarch(ADV.enemyMaxT);
   updateWeakList();
 }
 
@@ -1216,6 +1221,10 @@ function startBar(maxT) {
 function startEnemyMarch(maxT) {
   if (ADV.enemyAnimFrame) cancelAnimationFrame(ADV.enemyAnimFrame);
   const enemyEl = document.getElementById('enemy');
+  // Defensive: ensure enemySpawnTime is set and valid
+  if (!ADV.enemySpawnTime || isNaN(ADV.enemySpawnTime)) {
+    ADV.enemySpawnTime = performance.now();
+  }
   enemyEl.style.right = '-100px';
   enemyEl.classList.remove('entering', 'hit', 'dying', 'attacking');
   enemyEl.style.opacity = '1';
@@ -1224,6 +1233,10 @@ function startEnemyMarch(maxT) {
   function march() {
     if (!ADV.currentPrompt) return;
     const elapsed = (performance.now() - ADV.enemySpawnTime) / 1000;
+    if (isNaN(elapsed) || elapsed < 0) {
+      ADV.enemyAnimFrame = requestAnimationFrame(march);
+      return;
+    }
     const ratio = Math.min(1, elapsed / maxT);
     // Move from -100px (off-screen right) to 100px (where character is at left: 80px)
     const right = -100 + ratio * 200;
@@ -1352,14 +1365,14 @@ function handleAnswer(correct, elapsedMs) {
     ADV.promptInStage++;
     if (correct && inWindow) ADV.defeated++;
     ADV.totalEnemies++;
-    // Spawn new enemy (visual)
+    // Spawn new enemy visually
     spawnEnemy();
-    // Next prompt after a brief delay
     setTimeout(() => {
       ADV.awaitingNext = false;
+      ADV.enemySpawnTime = performance.now();
       nextPrompt();
-    }, 350);
-  }, 380);
+    }, 200);
+  }, 220);
 }
 
 function updateWeakList() {
