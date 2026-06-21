@@ -4149,528 +4149,1081 @@ function closeStats() {
 }
 
 /* ============================================================
-   PHASER 3 — Side-Scroll Run (the real game engine version)
+   PHASER 3 — FULL GAME FRAMEWORK
    ============================================================
-   Phaser replaces the HTML/CSS approach for actual gameplay.
-   HTML stays for landing / settings / UI overlays.
+   All gameplay runs through Phaser. HTML only for landing
+   and stats modal. Each mode is a Phaser.Scene with proper
+   sprite system, particles, tweens, camera effects.
 ============================================================ */
 let PHASER_GAME = null;
-let PHASER_SCENE_KEY = 'SideScrollScene';
-const PHASER_CIPHERS = ['Morse','Semaphore','Pigpen','Grid','PhoneT9','Braille'];
-let PHASER_STATE = {
-  ciphers: ['Morse','Semaphore','Pigpen','Grid','PhoneT9','Braille'],
-  speed: 1.0,
-  spawnRate: 2.0,
-  lives: 3,
-  minT: 0.8,
-  maxT: 5.0,
-  distance: 0,
-  score: 0,
-  combo: 0,
-  bestCombo: 0,
-  decoded: 0,
-  weakLetters: {},
-  currentPrompt: null,
-  promptStartTime: 0,
-  promptShown: false,
-  answers: [],
-  running: false,
-};
 
-class SideScrollScene extends Phaser.Scene {
-  constructor() { super('SideScrollScene'); }
+// ===== SHARED UTILITY CLASSES =====
 
-  create() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+// Health bar widget (HP + shield layer)
+class HealthBar extends Phaser.GameObjects.Container {
+  constructor(scene, x, y, maxHp, maxShield, color, name) {
+    super(scene, x, y);
+    this.maxHp = maxHp;
+    this.maxShield = maxShield;
+    this.hp = maxHp;
+    this.shield = maxShield;
 
-    // ===== BACKGROUND LAYERS =====
-    // Sky
-    this.add.rectangle(0, 0, W * 3, H, 0x1a0a3e).setOrigin(0, 0).setAlpha(0.8);
-    // Gradient stripes for sky depth
-    for (let i = 0; i < 5; i++) {
-      this.add.rectangle(0, i * 60, W * 3, 30, 0x4a2a8e, 0.3 - i * 0.05).setOrigin(0, 0);
+    const W = 280, H = 26;
+    // Name label
+    if (name) {
+      this.nameText = scene.add.text(0, -22, name, {
+        fontFamily: '"SF Mono", monospace', fontSize: '14px',
+        fontStyle: 'bold', color: '#e8efff'
+      }).setOrigin(0, 0);
+      this.add(this.nameText);
     }
+    // Background
+    this.bg = scene.add.rectangle(0, 0, W, H, 0x0a0e1a, 0.6).setOrigin(0, 0.5);
+    this.bg.setStrokeStyle(1, 0x2a3556);
+    this.add(this.bg);
+    // HP fill (drawn as overlay)
+    this.hpFill = scene.add.rectangle(1, 0, W - 2, H - 4, color).setOrigin(0, 0.5);
+    this.add(this.hpFill);
+    // Shield fill (drawn on top)
+    this.shieldFill = scene.add.rectangle(1, 0, 0, H - 4, 0x7c4dff, 0.7).setOrigin(0, 0.5);
+    this.add(this.shieldFill);
+    // HP text
+    this.hpText = scene.add.text(W / 2, 0, '', {
+      fontFamily: '"SF Mono", monospace', fontSize: '13px',
+      fontStyle: 'bold', color: '#ffffff'
+    }).setOrigin(0.5, 0.5);
+    this.add(this.hpText);
 
-    // Stars (twinkling)
-    this.stars = [];
-    for (let i = 0; i < 40; i++) {
-      const star = this.add.circle(
-        Phaser.Math.Between(0, W * 3),
-        Phaser.Math.Between(10, H * 0.5),
-        Phaser.Math.Between(1, 2),
-        0xffffff
-      );
-      star.alpha = Phaser.Math.FloatBetween(0.3, 1);
-      this.stars.push(star);
-      this.tweens.add({
-        targets: star,
-        alpha: Phaser.Math.FloatBetween(0.2, 1),
-        duration: Phaser.Math.Between(1000, 3000),
-        yoyo: true,
-        repeat: -1,
-      });
+    this.updateBar();
+  }
+
+  setHp(hp, shield) {
+    this.hp = Math.max(0, hp);
+    if (shield !== undefined) this.shield = Math.max(0, shield);
+    this.updateBar();
+  }
+
+  updateBar() {
+    const W = 280, H = 26;
+    const hpRatio = Math.max(0, this.hp / this.maxHp);
+    this.hpFill.width = (W - 2) * hpRatio;
+    this.hpFill.fillColor = hpRatio < 0.35 ? 0xff3d57 : (hpRatio < 0.6 ? 0xffcc00 : 0x00e676);
+    const shieldRatio = Math.max(0, this.shield / this.maxHp);
+    this.shieldFill.width = (W - 2) * shieldRatio;
+    this.hpText.setText(`${this.hp + this.shield} / ${this.maxHp + this.maxShield}`);
+  }
+
+  flashDamage() {
+    this.scene.tweens.add({
+      targets: this,
+      x: this.x - 5,
+      duration: 50,
+      yoyo: true,
+      repeat: 3,
+    });
+    this.scene.cameras.main.flash(120, 255, 61, 87);
+    this.scene.cameras.main.shake(150, 0.008);
+  }
+}
+
+// Combo countdown bar (the marquee UI element)
+class ComboBar extends Phaser.GameObjects.Container {
+  constructor(scene, x, y, width, maxTime, label) {
+    super(scene, x, y);
+    this.maxTime = maxTime;
+    this.startTime = scene.time.now;
+    this.width = width;
+
+    // Combo multiplier badge (top-right)
+    this.badge = scene.add.text(width - 16, -4, '×1.0', {
+      fontFamily: '"SF Mono", monospace', fontSize: '14px',
+      fontStyle: 'bold', color: '#00d2ff',
+      backgroundColor: '#0a0e1a',
+      padding: { x: 8, y: 4 },
+    }).setOrigin(0.5, 0.5);
+    this.badge.setStrokeStyle(2, 0x00d2ff, 1);
+    this.add(this.badge);
+
+    // Bar bg
+    this.bg = scene.add.rectangle(0, 8, width, 14, 0x1a2238).setOrigin(0, 0.5);
+    this.bg.setStrokeStyle(1, 0x2a3556);
+    this.add(this.bg);
+
+    // Bar fill
+    this.fill = scene.add.rectangle(0, 8, width, 12, 0x00d2ff).setOrigin(0, 0.5);
+    this.add(this.fill);
+
+    this.label = label;
+  }
+
+  setMultiplier(combo) {
+    const mult = comboMultiplier(combo);
+    this.badge.setText('×' + mult.toFixed(1));
+    if (combo > 0) {
+      this.badge.setColor(mult >= 3 ? '#00e676' : mult >= 2 ? '#ffcc00' : '#00d2ff');
     }
+  }
 
-    // Distant city silhouette
-    this.cityFar = this.add.container(0, 0);
-    for (let i = 0; i < 15; i++) {
-      const x = i * 120;
-      const h = Phaser.Math.Between(40, 80);
-      this.add.rectangle(x, H * 0.55 - h, 30, h, 0x1a0a2e).setOrigin(0, 0);
-    }
+  bumpMultiplier() {
+    this.scene.tweens.add({
+      targets: this.badge,
+      scaleX: 1.4, scaleY: 1.4,
+      duration: 100,
+      yoyo: true,
+    });
+  }
 
-    // Near city silhouette
-    this.cityNear = this.add.container(0, 0);
-    for (let i = 0; i < 20; i++) {
-      const x = i * 80;
-      const h = Phaser.Math.Between(60, 120);
-      this.add.rectangle(x, H * 0.65 - h, 25, h, 0x0a0e1e).setOrigin(0, 0);
-      // windows
-      for (let y = 0; y < h - 20; y += 12) {
-        if (Math.random() > 0.6) {
-          this.add.rectangle(x + 8, H * 0.65 - h + y + 8, 3, 3, 0xffcc00, 0.6).setOrigin(0, 0);
-        }
-      }
-    }
+  resetTimer() {
+    this.startTime = this.scene.time.now;
+  }
 
-    // ===== GROUND =====
-    this.groundY = H * 0.78;
-    this.ground = this.add.container(0, this.groundY);
-    // Ground base
-    this.add.rectangle(0, 0, W * 4, H * 0.22, 0x001a2e).setOrigin(0, 0);
-    // Ground top stripe (cyan)
-    this.add.rectangle(0, 0, W * 4, 4, 0x00d2ff).setOrigin(0, 0);
-    // Ground stripes (parallax)
-    this.groundStripes = [];
-    for (let i = 0; i < 50; i++) {
-      const stripe = this.add.rectangle(i * 80, 8, 3, H * 0.18, 0x000000, 0.4).setOrigin(0, 0);
-      this.groundStripes.push(stripe);
-    }
-    // Glow line
-    this.add.rectangle(0, -2, W * 4, 8, 0x00d2ff, 0.3).setOrigin(0, 0);
+  update() {
+    const elapsed = (this.scene.time.now - this.startTime) / 1000;
+    const remaining = Math.max(0, this.maxTime - elapsed);
+    const ratio = remaining / this.maxTime;
+    this.fill.width = this.width * ratio;
+    if (ratio < 0.3) this.fill.fillColor = 0xff3d57;
+    else if (ratio < 0.6) this.fill.fillColor = 0xffcc00;
+    else this.fill.fillColor = 0x00e676;
+    return remaining <= 0;
+  }
 
-    // ===== CHARACTER (Cyber Scout) =====
-    this.charX = 180;
-    this.charY = this.groundY - 8;
-    this.charContainer = this.add.container(this.charX, this.charY);
+  isExpired() {
+    return (this.scene.time.now - this.startTime) / 1000 >= this.maxTime;
+  }
+}
 
-    // Hover ring under feet
-    this.hoverRing = this.add.ellipse(this.charX, this.groundY + 4, 80, 14, 0x00d2ff, 0.5);
-    this.hoverRing.setStrokeStyle(2, 0x00d2ff, 0.8);
-
-    // Character built with Graphics (procedural sprite)
-    this.charBody = this.add.graphics();
-    this.charContainer.add(this.charBody);
-    this.drawCharacter('idle');
-
-    // Bobbing animation
-    this.tweens.add({
-      targets: this.charContainer,
-      y: this.charY - 6,
-      duration: 600,
+// Scout sprite (Cyber-themed character, multi-state)
+class ScoutSprite extends Phaser.GameObjects.Container {
+  constructor(scene, x, y, color, facingRight = true) {
+    super(scene, x, y);
+    this.color = color;
+    this.accent = 0xffcc00;
+    this.facingRight = facingRight;
+    this.gfx = scene.add.graphics();
+    this.add(this.gfx);
+    this.drawState('idle');
+    // Idle bob
+    scene.tweens.add({
+      targets: this,
+      y: y - 6,
+      duration: 1500,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
-
-    // ===== PARTICLE EMITTERS =====
-    // Jump burst (used on correct answer)
-    this.jumpParticles = this.add.particles(0, 0, 'particles', {
-      frameQuantity: 0, // use custom particles
-      lifespan: 600,
-      speed: { min: 100, max: 300 },
-      scale: { start: 0.6, end: 0 },
-      alpha: { start: 1, end: 0 },
-      blendMode: 'ADD',
-      emitting: false,
-    });
-    // Use a generated texture for particles
-    const particleTex = this.add.graphics();
-    particleTex.fillStyle(0x00e676, 1);
-    particleTex.fillCircle(8, 8, 8);
-    particleTex.generateTexture('particles', 16, 16);
-    particleTex.destroy();
-    this.jumpParticles.setTexture('particles');
-    this.jumpParticles.setParticleTint(0x00e676);
-
-    // Hurt particles (red)
-    this.hurtParticles = this.add.particles(0, 0, 'particles', {
-      lifespan: 400,
-      speed: { min: 80, max: 200 },
-      scale: { start: 0.4, end: 0 },
-      alpha: { start: 1, end: 0 },
-      blendMode: 'ADD',
-      emitting: false,
-    });
-    this.hurtParticles.setTexture('particles');
-    this.hurtParticles.setParticleTint(0xff3d57);
-
-    // ===== INPUT & GAME STATE =====
-    PHASER_STATE.distance = 0;
-    PHASER_STATE.score = 0;
-    PHASER_STATE.combo = 0;
-    PHASER_STATE.bestCombo = 0;
-    PHASER_STATE.decoded = 0;
-    PHASER_STATE.weakLetters = {};
-    PHASER_STATE.answers = [];
-    PHASER_STATE.running = true;
-
-    // Show HTML UI overlay
-    document.getElementById('phaser-hud').style.display = 'flex';
-
-    // Spawn first prompt
-    this.spawnPrompt();
-
-    // Set up HTML input handler
-    const input = document.getElementById('ph-input');
-    input.value = '';
-    input.focus();
-
-    // Update HUD periodically (50ms)
-    this.hudTimer = this.time.addEvent({
-      delay: 50,
-      callback: () => this.updateHUD(),
-      loop: true,
-    });
   }
 
-  drawCharacter(state) {
-    const g = this.charBody;
+  drawState(state) {
+    const g = this.gfx;
     g.clear();
+    const c = this.color;
+    const ac = this.accent;
 
-    // State affects pose
-    const isJump = state === 'jump';
-    const isHurt = state === 'hurt';
-    const lunge = isJump ? 20 : 0;
-    const squish = isHurt ? 0.9 : 1;
-
-    // Body color
-    const primary = 0x00d2ff;
-    const accent = 0xffcc00;
-
-    // Visor glow
-    g.fillStyle(0x00d2ff, 0.15);
+    // Aura
+    g.fillStyle(c, 0.18);
     g.fillCircle(0, -30, 50);
 
     // Body
     g.fillStyle(0x1a2238, 1);
-    g.fillRoundedRect(-15, -50 + lunge, 30, 50, 4);
-    g.lineStyle(2, primary, 1);
-    g.strokeRoundedRect(-15, -50 + lunge, 30, 50, 4);
+    g.fillRoundedRect(-15, -50, 30, 50, 4);
+    g.lineStyle(2, c, 1);
+    g.strokeRoundedRect(-15, -50, 30, 50, 4);
 
-    // Chest core (glowing)
-    g.fillStyle(accent, 0.4);
-    g.fillCircle(0, -28 + lunge, 8);
-    g.fillStyle(accent, 1);
-    g.fillCircle(0, -28 + lunge, 5);
+    // Chest core
+    g.fillStyle(ac, 0.4);
+    g.fillCircle(0, -28, 8);
+    g.fillStyle(ac, 1);
+    g.fillCircle(0, -28, 5);
 
-    // Head/helmet
+    // Helmet
     g.fillStyle(0x1a2238, 1);
-    g.fillRoundedRect(-12, -75 + lunge, 24, 30, 4);
-    g.lineStyle(2, primary, 1);
-    g.strokeRoundedRect(-12, -75 + lunge, 24, 30, 4);
+    g.fillRoundedRect(-12, -75, 24, 30, 4);
+    g.lineStyle(2, c, 1);
+    g.strokeRoundedRect(-12, -75, 24, 30, 4);
 
     // Visor
-    g.fillStyle(primary, 1);
-    g.fillRoundedRect(-10, -65 + lunge, 20, 8, 2);
+    g.fillStyle(c, 1);
+    g.fillRoundedRect(-10, -65, 20, 8, 2);
     g.fillStyle(0xffffff, 0.9);
-    g.fillCircle(-5, -61 + lunge, 2);
-    g.fillCircle(0, -61 + lunge, 2);
-    g.fillCircle(5, -61 + lunge, 2);
+    g.fillCircle(-5, -61, 2);
+    g.fillCircle(0, -61, 2);
+    g.fillCircle(5, -61, 2);
 
     // Antenna
-    g.lineStyle(2, primary, 1);
-    g.lineBetween(0, -75 + lunge, 0, -85 + lunge);
-    g.fillStyle(accent, 1);
-    g.fillCircle(0, -86 + lunge, 2);
+    g.lineStyle(2, c, 1);
+    g.lineBetween(0, -75, 0, -85);
+    g.fillStyle(ac, 1);
+    g.fillCircle(0, -86, 2);
 
     // Arms
     g.fillStyle(0x1a2238, 1);
-    g.fillRoundedRect(-22, -45 + lunge, 8, 25, 3);  // back arm
-    g.lineStyle(1.5, primary, 1);
-    g.strokeRoundedRect(-22, -45 + lunge, 8, 25, 3);
+    g.fillRoundedRect(-22, -45, 8, 25, 3);
+    g.lineStyle(1.5, c, 1);
+    g.strokeRoundedRect(-22, -45, 8, 25, 3);
     g.fillStyle(0x1a2238, 1);
-    g.fillRoundedRect(14, -45 + lunge, 8, 25, 3);  // front arm
-    g.lineStyle(1.5, primary, 1);
-    g.strokeRoundedRect(14, -45 + lunge, 8, 25, 3);
+    g.fillRoundedRect(14, -45, 8, 25, 3);
+    g.lineStyle(1.5, c, 1);
+    g.strokeRoundedRect(14, -45, 8, 25, 3);
 
-    // Sword (when jumping)
-    if (isJump) {
-      g.fillStyle(primary, 1);
-      g.fillRect(20, -28 + lunge, 35, 4);
-      g.fillStyle(accent, 1);
-      g.fillRect(20, -28 + lunge, 35, 1.5);
+    // Sword extending from right hand
+    if (this.facingRight) {
+      g.fillStyle(c, 1);
+      g.fillRect(20, -28, 35, 4);
+      g.fillStyle(ac, 1);
+      g.fillRect(20, -28, 35, 1.5);
       g.fillStyle(0xffffff, 1);
-      g.fillCircle(55, -26 + lunge, 3);
+      g.fillCircle(55, -26, 3);
+    } else {
+      g.fillStyle(c, 1);
+      g.fillRect(-55, -28, 35, 4);
+      g.fillStyle(ac, 1);
+      g.fillRect(-55, -28, 35, 1.5);
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(-55, -26, 3);
     }
 
     // Legs
     g.fillStyle(0x1a2238, 1);
     g.fillRoundedRect(-10, 0, 7, 20, 2);
-    g.lineStyle(1.5, primary, 1);
+    g.lineStyle(1.5, c, 1);
     g.strokeRoundedRect(-10, 0, 7, 20, 2);
     g.fillRoundedRect(3, 0, 7, 20, 2);
-    g.lineStyle(1.5, primary, 1);
+    g.lineStyle(1.5, c, 1);
     g.strokeRoundedRect(3, 0, 7, 20, 2);
 
     // Boots
-    g.fillStyle(primary, 1);
+    g.fillStyle(c, 1);
     g.fillRect(-12, 16, 11, 4);
     g.fillRect(1, 16, 11, 4);
 
-    // Hurt red flash overlay
-    if (isHurt) {
-      g.fillStyle(0xff3d57, 0.4);
+    // Hurt flash
+    if (state === 'hurt') {
+      g.fillStyle(0xff3d57, 0.5);
       g.fillCircle(0, -30, 60);
     }
-
-    // Subtle scale
-    this.charContainer.setScale(squish, 2 - squish);
   }
 
-  spawnPrompt() {
-    const cipher = PHASER_STATE.ciphers[Math.floor(Math.random() * PHASER_STATE.ciphers.length)];
+  setState(state, durationMs) {
+    this.drawState(state);
+    if (durationMs && state !== 'idle') {
+      this.scene.time.delayedCall(durationMs, () => this.drawState('idle'));
+    }
+  }
+}
+
+// Boss sprite (Cipher Warden)
+class BossSprite extends Phaser.GameObjects.Container {
+  constructor(scene, x, y) {
+    super(scene, x, y);
+    this.gfx = scene.add.graphics();
+    this.add(this.gfx);
+    this.drawState('idle');
+    // Idle float
+    scene.tweens.add({
+      targets: this,
+      y: y - 8,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  drawState(state) {
+    const g = this.gfx;
+    g.clear();
+    const isAttack = state === 'attack';
+    const isHurt = state === 'hurt';
+
+    // Aura
+    g.fillStyle(0x7c4dff, 0.25);
+    g.fillCircle(0, 0, 110);
+
+    // Magic circle on ground
+    g.lineStyle(2, 0x7c4dff, 0.7);
+    g.strokeEllipse(0, 100, 200, 28, 64);
+    g.lineStyle(1.5, 0xff3d57, 0.6);
+    g.strokeEllipse(0, 100, 160, 20, 64);
+    g.lineStyle(1, 0x7c4dff, 0.5);
+    g.strokeEllipse(0, 100, 120, 14, 64);
+
+    // Cipher symbols orbiting
+    g.fillStyle(0xffcc00, 0.8);
+    g.fillCircle(-90, -10, 4); // ·
+    g.fillCircle(90, -10, 4);  // −
+    g.fillStyle(0x7c4dff, 0.7);
+    g.fillCircle(-80, 50, 3);  // ⊕
+    g.fillCircle(80, 50, 3);   // ×
+
+    // Robe body
+    g.fillStyle(0x2a1a4e, 1);
+    g.fillEllipse(0, 90, 110, 50, 64);  // skirt
+    g.lineStyle(2, 0x7c4dff, 1);
+    g.strokeEllipse(0, 90, 110, 50, 64);
+    g.fillStyle(0x2a1a4e, 1);
+    g.fillEllipse(0, 30, 60, 60, 64);  // body
+    g.lineStyle(2, 0x7c4dff, 1);
+    g.strokeEllipse(0, 30, 60, 60, 64);
+
+    // Sleeves
+    g.fillStyle(0x2a1a4e, 1);
+    g.fillEllipse(-60, 40, 30, 50, 64);
+    g.lineStyle(2, 0x7c4dff, 1);
+    g.strokeEllipse(-60, 40, 30, 50, 64);
+    g.fillStyle(0x2a1a4e, 1);
+    g.fillEllipse(60, 40, 30, 50, 64);
+    g.lineStyle(2, 0x7c4dff, 1);
+    g.strokeEllipse(60, 40, 30, 50, 64);
+
+    // Hands (glowing)
+    g.fillStyle(0x7c4dff, 0.9);
+    g.fillCircle(-60, 40, 10);
+    g.fillCircle(60, 40, 10);
+
+    // Attack burst from hands
+    if (isAttack) {
+      g.fillStyle(0xff3d57, 0.6);
+      g.fillCircle(-60, 40, 30);
+      g.fillCircle(60, 40, 30);
+    }
+
+    // Robe emblem
+    g.lineStyle(2, 0xffcc00, 1);
+    g.strokeCircle(0, 30, 14);
+    g.fillStyle(0xffcc00, 1);
+    g.fillCircle(0, 30, 6);
+
+    // Hood
+    g.fillStyle(0x000000, 1);
+    g.fillEllipse(0, -50, 70, 80, 64);
+    g.lineStyle(2, 0x7c4dff, 1);
+    g.strokeEllipse(0, -50, 70, 80, 64);
+
+    // Hood interior
+    g.fillStyle(0x000000, 1);
+    g.fillEllipse(0, -40, 50, 40, 64);
+
+    // Glowing eyes
+    g.fillStyle(0x7c4dff, 1);
+    g.fillEllipse(-15, -50, 10, 6, 32);
+    g.fillEllipse(15, -50, 10, 6, 32);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(-15, -50, 2);
+    g.fillCircle(15, -50, 2);
+
+    // Hurt flash
+    if (isHurt) {
+      g.fillStyle(0xff3d57, 0.5);
+      g.fillCircle(0, 0, 120);
+    }
+  }
+
+  setState(state, durationMs) {
+    this.drawState(state);
+    if (durationMs && state !== 'idle') {
+      this.scene.time.delayedCall(durationMs, () => this.drawState('idle'));
+    }
+  }
+}
+
+// Damage floater (floating damage number)
+class DamageFloater extends Phaser.GameObjects.Text {
+  constructor(scene, x, y, amount) {
+    super(scene, x, y, '-' + amount, {
+      fontFamily: '"SF Mono", monospace', fontSize: '32px',
+      fontStyle: 'bold', color: '#ff3d57',
+      stroke: '#000000', strokeThickness: 3,
+    });
+    scene.add.existing(this);
+    scene.tweens.add({
+      targets: this,
+      y: y - 80,
+      alpha: 0,
+      scale: 1.3,
+      duration: 900,
+      ease: 'Quad.easeOut',
+      onComplete: () => this.destroy(),
+    });
+  }
+}
+
+// Particle burst (gold for cancel clash, green for correct, red for hurt)
+class ParticleBurst {
+  constructor(scene) {
+    this.scene = scene;
+    // Create reusable texture
+    const tex = scene.add.graphics();
+    tex.fillStyle(0xffffff, 1);
+    tex.fillCircle(8, 8, 8);
+    tex.generateTexture('p_circle', 16, 16);
+    tex.destroy();
+  }
+
+  emit(x, y, color, count = 20, speed = 200) {
+    const emitter = this.scene.add.particles(x, y, 'p_circle', {
+      lifespan: 600,
+      speed: { min: speed * 0.5, max: speed },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.6, end: 0 },
+      alpha: { start: 1, end: 0 },
+      blendMode: 'ADD',
+      quantity: count,
+      tint: color,
+    });
+    this.scene.time.delayedCall(700, () => emitter.destroy());
+  }
+
+  // Cancel clash: two converging beams of gold + impact burst
+  cancelClash(x, y) {
+    this.emit(x, y, 0xffcc00, 30, 350);
+    this.emit(x, y, 0x00d2ff, 20, 250);
+    this.scene.cameras.main.flash(200, 255, 204, 0);
+    this.scene.cameras.main.shake(250, 0.012);
+  }
+
+  // Correct answer: green explosion
+  correct(x, y) {
+    this.emit(x, y, 0x00e676, 24, 250);
+    this.scene.cameras.main.shake(80, 0.004);
+  }
+
+  // Hurt: red + screen flash
+  hurt(x, y) {
+    this.emit(x, y, 0xff3d57, 16, 200);
+    this.scene.cameras.main.flash(120, 255, 61, 87);
+    this.scene.cameras.main.shake(180, 0.01);
+  }
+
+  // Boss attack: purple beam
+  bossAttack(x, y) {
+    this.emit(x, y, 0x7c4dff, 28, 220);
+    this.emit(x, y, 0xff3d57, 14, 180);
+  }
+
+  // Boss hurt: red impact
+  bossHurt(x, y) {
+    this.emit(x, y, 0xff3d57, 32, 300);
+    this.emit(x, y, 0xffcc00, 16, 200);
+    this.scene.cameras.main.flash(80, 255, 204, 0);
+    this.scene.cameras.main.shake(150, 0.01);
+  }
+}
+
+// Shared game state
+const GAME = {
+  mode: null, // current mode
+  combo: 0,
+  bestCombo: 0,
+  score: 0,
+  weakLetters: {},
+};
+
+// ===== SCENES =====
+
+class BootScene extends Phaser.Scene {
+  constructor() { super('BootScene'); }
+
+  preload() {
+    // Generate textures procedurally (no external assets needed)
+    const tex = this.add.graphics();
+    tex.fillStyle(0xffffff, 1);
+    tex.fillCircle(8, 8, 8);
+    tex.generateTexture('particle_circle', 16, 16);
+    tex.destroy();
+  }
+
+  create() {
+    // Skip boot, go to landing
+    this.scene.start('LandingScene');
+  }
+}
+
+class LandingScene extends Phaser.Scene {
+  constructor() { super('LandingScene'); }
+  create() {
+    const W = this.scale.width, H = this.scale.height;
+    // Background gradient (handled by HTML behind)
+    // Just draw the character pair as decoration
+    const scout = new ScoutSprite(this, W / 2 - 100, H / 2 + 100, 0x00d2ff, true);
+    scout.setScale(1.5);
+    const warden = new BossSprite(this, W / 2 + 100, H / 2 + 100);
+    warden.setScale(0.6);
+
+    // Subtle floating bob for both
+    this.tweens.add({
+      targets: scout,
+      y: scout.y - 10,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+}
+
+// ===== Duel Scene (1v1) =====
+class DuelScene extends Phaser.Scene {
+  constructor() { super('DuelScene'); }
+
+  create() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+
+    // State
+    this.state = {
+      round: 1,
+      hpA: 100, hpB: 100,
+      shieldA: 20, shieldB: 20,
+      promptShownAt: 0,
+      answers: { a: null, b: null },
+      answerTimes: { a: null, b: null },
+      currentPrompt: null,
+    };
+
+    // Arena background
+    const arena = this.add.rectangle(W / 2, H / 2, W - 60, H - 100, 0x1a0a2e, 0.6);
+    arena.setStrokeStyle(2, 0x2a3556);
+
+    // Fighters
+    this.scoutA = new ScoutSprite(this, W / 2 - 250, H / 2 + 50, 0x00d2ff, false);
+    this.scoutA.setScale(0.85);
+    this.scoutB = new ScoutSprite(this, W / 2 + 250, H / 2 + 50, 0xff3d57, true);
+    this.scoutB.setScale(0.85);
+
+    // HP bars
+    this.hpA = new HealthBar(this, W / 2 - 410, 60, 100, 20, 0x00e676, 'SCOUT A');
+    this.hpB = new HealthBar(this, W / 2 + 130, 60, 100, 20, 0xff3d57, 'SCOUT B');
+
+    // Combo bar (centered)
+    this.comboBar = new ComboBar(this, W / 2 - 200, 130, 400, 6, 'ROUND TIMER');
+
+    // Shared prompt display
+    this.promptFrame = this.add.rectangle(W / 2, H / 2 - 50, 600, 140, 0x1a2238, 0.9);
+    this.promptFrame.setStrokeStyle(2, 0xffcc00);
+    this.promptLabel = this.add.text(W / 2, H / 2 - 110, 'SHARED PROMPT · ROUND 1', {
+      fontFamily: '"SF Mono", monospace', fontSize: '11px',
+      color: '#8a9bc4', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.promptText = this.add.text(W / 2, H / 2 - 50, '', {
+      fontFamily: '"SF Mono", monospace', fontSize: '48px',
+      fontStyle: 'bold', color: '#ffcc00',
+    }).setOrigin(0.5);
+
+    // VS badge
+    const vs = this.add.circle(W / 2, H / 2 + 50, 36, 0xff3d57);
+    vs.setStrokeStyle(3, 0x7c4dff);
+    this.add.text(W / 2, H / 2 + 50, 'VS', {
+      fontFamily: '"SF Mono", monospace', fontSize: '24px',
+      fontStyle: 'bold', color: '#ffffff',
+    }).setOrigin(0.5);
+
+    // Particle system
+    this.burst = new ParticleBurst(this);
+
+    // Generate first prompt
+    this.generatePrompt();
+
+    // Hook HTML input
+    this.setupHtmlInput();
+
+    // Score & combo display
+    this.scoreA = this.add.text(W / 2 - 200, H - 90, 'A: 0', {
+      fontFamily: '"SF Mono", monospace', fontSize: '20px',
+      fontStyle: 'bold', color: '#00d2ff',
+    }).setOrigin(1, 0);
+    this.scoreB = this.add.text(W / 2 + 200, H - 90, 'B: 0', {
+      fontFamily: '"SF Mono", monospace', fontSize: '20px',
+      fontStyle: 'bold', color: '#ff3d57',
+    }).setOrigin(0, 0);
+
+    // Round display
+    this.roundText = this.add.text(W / 2, 30, 'ROUND 1', {
+      fontFamily: '"SF Mono", monospace', fontSize: '20px',
+      fontStyle: 'bold', color: '#00d2ff',
+    }).setOrigin(0.5);
+
+    // Back button overlay
+    this.add.text(30, 30, '← BACK', {
+      fontFamily: '"SF Mono", monospace', fontSize: '14px',
+      fontStyle: 'bold', color: '#8a9bc4',
+    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => exitPhaserGame());
+  }
+
+  setupHtmlInput() {
+    const input = document.getElementById('ph-input');
+    if (input) {
+      input.value = '';
+      input.placeholder = 'SCOUT A ANSWER (or B if fighting AI)';
+      input.focus();
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          const va = input.value.toUpperCase().trim();
+          // Player is Scout A, AI plays Scout B with random correct/wrong
+          this.handleAnswer('a', va);
+          // Auto-trigger Scout B
+          this.time.delayedCall(800, () => this.aiAnswer('b'));
+        }
+      };
+    }
+  }
+
+  generatePrompt() {
+    const cipher = CIPHER_LIST[Math.floor(Math.random() * CIPHER_LIST.length)];
     const target = String.fromCharCode(65 + Math.floor(Math.random() * 26));
     const encoded = encodeToCipher(target, cipher);
-    PHASER_STATE.currentPrompt = { cipher, target, encoded };
-    PHASER_STATE.promptStartTime = performance.now();
-    PHASER_STATE.promptShown = true;
-
-    // Update HTML bubble
-    const bubble = document.getElementById('ph-prompt-bubble');
-    bubble.style.display = 'block';
-    document.getElementById('ph-prompt-label').textContent = (cipher === 'PhoneT9' ? 'PHONE T9' : cipher.toUpperCase());
-    const content = document.getElementById('ph-prompt-content');
-    content.innerHTML = '';
-    renderCipherPrompt(content, encoded, cipher);
-
-    const input = document.getElementById('ph-input');
-    input.value = '';
-    input.focus();
+    this.state.currentPrompt = { cipher, target, encoded };
+    this.state.promptShownAt = this.time.now;
+    this.state.answers = { a: null, b: null };
+    this.state.answerTimes = { a: null, b: null };
+    this.promptLabel.setText(`SHARED PROMPT · ROUND ${this.state.round} · ${(cipher === 'PhoneT9' ? 'PHONE T9' : cipher.toUpperCase())}`);
+    // Render prompt (we use simple text for Phaser)
+    this.promptText.setText(encoded.replace(/·/g, '·').replace(/\//g, ' '));
+    this.comboBar.resetTimer();
+    this.comboBar.setMultiplier(0);
   }
 
-  updateHUD() {
-    document.getElementById('ph-dist').textContent = Math.floor(PHASER_STATE.distance) + ' m';
-    document.getElementById('ph-score').textContent = PHASER_STATE.score.toLocaleString();
-    document.getElementById('ph-combo').textContent = PHASER_STATE.combo;
-    const hearts = '♥'.repeat(Math.max(0, PHASER_STATE.lives)) +
-      '<span style="opacity:0.2">♥</span>'.repeat(Math.max(0, 3 - PHASER_STATE.lives));
-    document.getElementById('ph-lives').innerHTML = hearts;
-    if (PHASER_STATE.currentPrompt && PHASER_STATE.promptShown) {
-      const elapsed = (performance.now() - PHASER_STATE.promptStartTime) / 1000;
-      const remaining = Math.max(0, PHASER_STATE.maxT - elapsed);
-      document.getElementById('ph-prompt-bar').style.width =
-        ((remaining / PHASER_STATE.maxT) * 100) + '%';
-      if (remaining <= 0) this.handleAnswer(false, PHASER_STATE.maxT * 1000);
+  aiAnswer(side) {
+    // AI plays correctly 70% of time
+    const correct = Math.random() < 0.7;
+    const input = correct ? this.state.currentPrompt.target :
+      String.fromCharCode(65 + Math.floor(Math.random() * 26));
+    const elapsed = this.time.now - this.state.promptShownAt + Phaser.Math.Between(800, 3000);
+    this.handleAnswer(side, input, elapsed);
+  }
+
+  handleAnswer(side, input, elapsedOverride) {
+    if (this.state.answers[side]) return;
+    const elapsed = elapsedOverride !== undefined ? elapsedOverride : (this.time.now - this.state.promptShownAt);
+    this.state.answers[side] = input.toUpperCase().trim();
+    this.state.answerTimes[side] = elapsed;
+
+    if (this.state.answers.a && this.state.answers.b) {
+      this.time.delayedCall(50, () => this.resolveDuel());
     }
   }
 
-  handleAnswer(correct, elapsedMs) {
-    const target = PHASER_STATE.currentPrompt.target;
-    const inWindow = elapsedMs >= PHASER_STATE.minT * 1000;
+  resolveDuel() {
+    const a = this.state.answers.a === this.state.currentPrompt.target;
+    const b = this.state.answers.b === this.state.currentPrompt.target;
+    const ta = this.state.answerTimes.a;
+    const tb = this.state.answerTimes.b;
+    const CANCEL_WINDOW = 400;
+    const prompt = this.state.currentPrompt;
 
-    if (correct && inWindow) {
-      PHASER_STATE.combo++;
-      PHASER_STATE.bestCombo = Math.max(PHASER_STATE.bestCombo, PHASER_STATE.combo);
-      PHASER_STATE.decoded++;
-      const mult = comboMultiplier(PHASER_STATE.combo);
-      const speedBonus = 1 + Math.max(0, (PHASER_STATE.maxT * 1000 - elapsedMs) / (PHASER_STATE.maxT * 1000)) * 0.5;
-      PHASER_STATE.score += Math.round(100 * mult * speedBonus);
-
-      // Jump animation
-      this.drawCharacter('jump');
-      this.tweens.add({
-        targets: this.charContainer,
-        y: this.charY - 130,
-        duration: 300,
-        yoyo: true,
-        ease: 'Quad.easeOut',
-        onComplete: () => this.drawCharacter('idle'),
-      });
-
-      // Particle burst (green)
-      this.jumpParticles.emitParticleAt(this.charX + 20, this.charY - 30, 20);
-      Audio.jump();
-      Audio.correct();
-
-      // Camera shake
-      this.cameras.main.shake(100, 0.005);
-
-      // Save
-      if (!SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher])
-        SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher] = {};
-      SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] =
-        (SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] || 0) + 1;
-      if (PHASER_STATE.score > SAVE.sidescroll.bestScore) SAVE.sidescroll.bestScore = PHASER_STATE.score;
-      if (PHASER_STATE.bestCombo > SAVE.sidescroll.bestCombo) SAVE.sidescroll.bestCombo = PHASER_STATE.bestCombo;
-      commitSave();
-
-    } else if (correct && !inWindow) {
-      PHASER_STATE.combo = 0;
-      Audio.uiClick();
+    if (a && b) {
+      if (Math.abs(ta - tb) < CANCEL_WINDOW) {
+        this.cancelClash();
+      } else {
+        const winner = ta < tb ? 'a' : 'b';
+        const loser = winner === 'a' ? 'b' : 'a';
+        const dmg = Math.round(6 * (1 + Math.max(0, (6000 - this.state.answerTimes[winner]) / 6000) * 0.6));
+        this.state['hp' + loser.toUpperCase()] = Math.max(0, this.state['hp' + loser.toUpperCase()] - dmg);
+        this.attackHit(winner, loser, dmg);
+      }
+    } else if (a && !b) {
+      const dmg = Math.round(6 * (1 + Math.max(0, (6000 - ta) / 6000) * 0.6));
+      this.state.hpB = Math.max(0, this.state.hpB - dmg);
+      this.attackHit('a', 'b', dmg);
+    } else if (!a && b) {
+      const dmg = Math.round(6 * (1 + Math.max(0, (6000 - tb) / 6000) * 0.6));
+      this.state.hpA = Math.max(0, this.state.hpA - dmg);
+      this.attackHit('b', 'a', dmg);
     } else {
-      PHASER_STATE.combo = 0;
-      PHASER_STATE.lives--;
-      this.drawCharacter('hurt');
-      this.cameras.main.shake(200, 0.01);
-      this.cameras.main.flash(150, 255, 61, 87);
-      this.hurtParticles.emitParticleAt(this.charX, this.charY - 30, 12);
-      Audio.hurt();
-
-      // Save
-      if (!SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher])
-        SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher] = {};
-      SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] =
-        (SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] || 0) + 1;
-
-      setTimeout(() => this.drawCharacter('idle'), 300);
+      this.burst.hurt(W / 2, H / 2);
     }
 
-    if (PHASER_STATE.lives <= 0) {
-      this.endScene();
+    this.hpA.setHp(this.state.hpA, this.state.shieldA);
+    this.hpB.setHp(this.state.hpB, this.state.shieldB);
+    this.scoreA.setText('A: ' + Math.floor((100 - this.state.hpA) * 1.5));
+    this.scoreB.setText('B: ' + Math.floor((100 - this.state.hpB) * 1.5));
+
+    if (this.state.hpA <= 0 || this.state.hpB <= 0) {
+      this.time.delayedCall(800, () => this.endDuel());
       return;
     }
 
-    // Schedule next prompt
-    const delay = Math.max(300, 1000 / PHASER_STATE.spawnRate);
-    PHASER_STATE.promptShown = false;
-    document.getElementById('ph-prompt-bubble').style.display = 'none';
-    this.time.delayedCall(delay, () => { if (PHASER_STATE.running) this.spawnPrompt(); });
+    this.state.round++;
+    this.roundText.setText('ROUND ' + this.state.round);
+    this.time.delayedCall(1500, () => this.generatePrompt());
   }
 
-  endScene() {
-    PHASER_STATE.running = false;
-    document.getElementById('phaser-hud').style.display = 'none';
-    document.getElementById('ph-prompt-bubble').style.display = 'none';
+  attackHit(winner, loser, dmg) {
+    Audio.attack();
+    const winnerSprite = winner === 'a' ? this.scoutA : this.scoutB;
+    const loserSprite = loser === 'a' ? this.scoutA : this.scoutB;
+    winnerSprite.setState('attack', 500);
+    loserSprite.setState('hurt', 400);
+    this.burst.emit(loserSprite.x, loserSprite.y, 0xff3d57, 16, 220);
+    this.cameras.main.shake(180, 0.012);
+    new DamageFloater(this, loserSprite.x, loserSprite.y - 60, dmg);
+    Audio.hurt();
+  }
 
-    // Save stats
-    SAVE.sidescroll.totalRuns++;
-    if (Math.floor(PHASER_STATE.distance) > SAVE.sidescroll.bestDistance)
-      SAVE.sidescroll.bestDistance = Math.floor(PHASER_STATE.distance);
-    if (SAVE.sidescroll.bestDistance >= 5000) recordAchievement('marathoner', '馬拉松跑者');
-    SAVE.lastPlayed = Date.now();
-    recordAchievement('first_run', '首次遊玩');
-    commitSave();
+  cancelClash() {
+    Audio.cancelClash();
+    this.burst.cancelClash(this.scale.width / 2, this.scale.height / 2 - 50);
+    this.scoutA.setState('attack', 500);
+    this.scoutB.setState('attack', 500);
+  }
+
+  endDuel() {
+    const winner = this.state.hpA > this.state.hpB ? 'SCOUT A' : (this.state.hpB > this.state.hpA ? 'SCOUT B' : 'DRAW');
+    // Show end card
+    const card = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, 500, 350, 0x0a0e1a, 0.95);
+    card.setStrokeStyle(2, 0xffcc00);
+    this.add.text(this.scale.width / 2, this.scale.height / 2 - 130, 'DUEL COMPLETE', {
+      fontFamily: '"SF Mono", monospace', fontSize: '14px',
+      fontStyle: 'bold', color: '#ffcc00',
+    }).setOrigin(0.5);
+    this.add.text(this.scale.width / 2, this.scale.height / 2 - 90, `${winner} WINS!`, {
+      fontFamily: '"SF Mono", monospace', fontSize: '32px',
+      fontStyle: 'bold', color: '#ffffff',
+    }).setOrigin(0.5);
+    this.add.text(this.scale.width / 2, this.scale.height / 2 + 60, '← BACK', {
+      fontFamily: '"SF Mono", monospace', fontSize: '14px',
+      fontStyle: 'bold', color: '#8a9bc4',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => exitPhaserGame());
+    if (this.state.hpA <= 0) this.scoutA.setState('ko', 1500);
+    if (this.state.hpB <= 0) this.scoutB.setState('ko', 1500);
     Audio.reveal();
 
-    // Show end screen
-    const endHTML = `
-      <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); z-index: 80;">
-        <div class="reveal-stage" style="border-color: var(--good); max-width: 500px;">
-          <div class="reveal-label" style="color: var(--good);">RUN COMPLETE</div>
-          <div class="result-grid mt-6">
-            <div class="result-cell"><div class="result-cell-label">DISTANCE</div><div class="result-cell-value text-good">${Math.floor(PHASER_STATE.distance)} m</div></div>
-            <div class="result-cell"><div class="result-cell-label">SCORE</div><div class="result-cell-value">${PHASER_STATE.score.toLocaleString()}</div></div>
-            <div class="result-cell"><div class="result-cell-label">DECODED</div><div class="result-cell-value">${PHASER_STATE.decoded}</div></div>
-            <div class="result-cell"><div class="result-cell-label">BEST COMBO</div><div class="result-cell-value text-gold">${PHASER_STATE.bestCombo}</div></div>
-          </div>
-          <div class="mt-6 flex-center gap-3">
-            <button class="btn btn-primary btn-big" onclick="restartPhaserGame()">RUN AGAIN</button>
-            <button class="btn btn-ghost" onclick="exitPhaserGame()">MENU</button>
-          </div>
-        </div>
-      </div>
-    `;
-    const endDiv = document.createElement('div');
-    endDiv.id = 'phaser-end-overlay';
-    endDiv.innerHTML = endHTML;
-    document.getElementById('phaser-ui').appendChild(endDiv);
-
-    this.scene.pause();
+    // Save stats
+    if (winner === 'SCOUT A' || winner === 'SCOUT B') {
+      SAVE.duel.wins++;
+      recordAchievement('first_win', '首次勝利');
+      commitSave();
+    }
   }
 
-  update(time, delta) {
-    if (!PHASER_STATE.running) return;
-    const dt = delta / 1000;
-    const speedMul = PHASER_STATE.speed;
-
-    PHASER_STATE.distance += 60 * dt * speedMul;
-
-    // Parallax scroll: shift all ground objects + city objects + stars
-    const scrollSpeed = 100 * dt * speedMul;
-
-    // Scroll stars
-    this.stars.forEach(s => { s.x -= scrollSpeed * 0.2; if (s.x < 0) s.x += this.scale.width * 3; });
-    // Scroll city
-    this.cityFar.list.forEach(o => { if (o.x !== undefined) { o.x -= scrollSpeed * 0.4; if (o.x < -100) o.x += 15 * 120; } });
-    this.cityNear.list.forEach(o => { if (o.x !== undefined) { o.x -= scrollSpeed * 0.7; if (o.x < -100) o.x += 20 * 80; } });
-    // Scroll ground stripes
-    this.groundStripes.forEach(s => { s.x -= scrollSpeed * 1.5; if (s.x < -100) s.x += 50 * 80; });
+  update() {
+    // Update combo bar
+    if (this.comboBar && this.comboBar.update()) {
+      // Time expired, force next prompt
+      this.state.answers.a = '__timeout__';
+      this.state.answers.b = '__timeout__';
+      if (!this.state.answers.b || this.state.answers.b === '__timeout__') {
+        this.aiAnswer('b');
+      }
+    }
   }
 }
 
 // ===== Phaser Game Init =====
+const PHASER_CONFIG = {
+  type: Phaser.AUTO,
+  parent: 'phaser-game',
+  backgroundColor: '#0a0e1a',
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: window.innerWidth,
+    height: window.innerHeight,
+  },
+  scene: [BootScene, LandingScene, DuelScene], // SideScrollScene added separately
+};
+
 function initPhaserGame() {
-  const config = {
-    type: Phaser.AUTO,
-    parent: 'phaser-game',
-    backgroundColor: '#0a0e1a',
-    scale: {
-      mode: Phaser.Scale.RESIZE,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
-      width: window.innerWidth,
-      height: window.innerHeight,
-    },
-    physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
-    scene: [SideScrollScene],
-  };
-  PHASER_GAME = new Phaser.Game(config);
+  if (PHASER_GAME) {
+    PHASER_GAME.destroy(true);
+    PHASER_GAME = null;
+  }
+  // Register SideScrollScene globally so Phaser can find it
+  PHASER_GAME = new Phaser.Game(PHASER_CONFIG);
 }
 
-function startPhaserMode(sceneKey) {
-  PHASER_SCENE_KEY = sceneKey;
+function startPhaserMode(modeName) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const host = document.getElementById('phaser-host');
   host.classList.remove('hidden');
-
-  if (!PHASER_GAME) initPhaserGame();
-
-  // Remove any existing end overlay
+  document.getElementById('phaser-hud').style.display = 'none';
+  document.getElementById('ph-prompt-bubble').style.display = 'none';
   const oldEnd = document.getElementById('phaser-end-overlay');
   if (oldEnd) oldEnd.remove();
 
+  if (!PHASER_GAME) initPhaserGame();
+
   setTimeout(() => {
-    PHASER_GAME.scene.stop('SideScrollScene');
-    PHASER_GAME.scene.start('SideScrollScene');
+    let sceneName;
+    if (modeName === 'duel') sceneName = 'DuelScene';
+    else if (modeName === 'sidescroll') sceneName = 'SideScrollScene';
+    else sceneName = 'DuelScene';
+    PHASER_GAME.scene.stop('LandingScene');
+    PHASER_GAME.scene.stop(sceneName);
+    PHASER_GAME.scene.start(sceneName);
   }, 50);
 }
 
 function exitPhaserGame() {
-  if (PHASER_GAME) PHASER_GAME.scene.stop('SideScrollScene');
+  if (PHASER_GAME) {
+    PHASER_GAME.scene.stop('DuelScene');
+    PHASER_GAME.scene.stop('SideScrollScene');
+    PHASER_GAME.scene.start('LandingScene');
+  }
   const host = document.getElementById('phaser-host');
   host.classList.add('hidden');
-  const oldEnd = document.getElementById('phaser-end-overlay');
-  if (oldEnd) oldEnd.remove();
   showScreen('landing');
 }
 
 function restartPhaserGame() {
-  startPhaserMode('SideScrollScene');
+  const mode = PHASER_SCENE_KEY;
+  startPhaserMode(mode);
 }
 
-function phaserSubmitAnswer() {
-  if (!PHASER_STATE.currentPrompt || !PHASER_STATE.running) return;
-  const input = document.getElementById('ph-input').value.toUpperCase().replace(/\s+/g, '').trim();
-  const elapsed = performance.now() - PHASER_STATE.promptStartTime;
-  const correct = input === PHASER_STATE.currentPrompt.target;
-  const scene = PHASER_GAME.scene.getScene('SideScrollScene');
-  if (scene && scene.handleAnswer) scene.handleAnswer(correct, elapsed);
-}
+let PHASER_SCENE_KEY = 'duel';
 
-// Override the sidescroll entry to use Phaser
-// Patch enterMode
-const _origEnterMode = enterMode;
+// Override sidescroll entry
+const _origEnterMode2 = enterMode;
 window.enterMode = function(name) {
   if (name === 'sidescroll') {
+    PHASER_SCENE_KEY = 'sidescroll';
     Audio.uiClick();
-    startPhaserMode('SideScrollScene');
+    startPhaserMode('sidescroll');
     return;
   }
-  _origEnterMode(name);
+  if (name === 'duel') {
+    PHASER_SCENE_KEY = 'duel';
+    Audio.uiClick();
+    startPhaserMode('duel');
+    return;
+  }
+  _origEnterMode2(name);
+};
+
+// ===== SideScrollScene (kept from v0.8, simplified) =====
+class SideScrollScene extends Phaser.Scene {
+  constructor() { super('SideScrollScene'); }
+  create() {
+    // Reuse previous SideScroll logic
+    if (typeof createSideScroll === 'function') createSideScroll.call(this);
+  }
+}
+
+function createSideScroll() {
+  const W = this.scale.width;
+  const H = this.scale.height;
+  PHASER_STATE.distance = 0; PHASER_STATE.score = 0;
+  PHASER_STATE.combo = 0; PHASER_STATE.bestCombo = 0;
+  PHASER_STATE.decoded = 0; PHASER_STATE.weakLetters = {};
+  PHASER_STATE.answers = []; PHASER_STATE.running = true;
+
+  // Background
+  this.add.rectangle(0, 0, W * 3, H, 0x1a0a3e, 0.9).setOrigin(0, 0);
+  for (let i = 0; i < 5; i++)
+    this.add.rectangle(0, i * 60, W * 3, 30, 0x4a2a8e, 0.3 - i * 0.05).setOrigin(0, 0);
+
+  // Stars
+  this.stars = [];
+  for (let i = 0; i < 40; i++) {
+    const s = this.add.circle(
+      Phaser.Math.Between(0, W * 3),
+      Phaser.Math.Between(10, H * 0.5),
+      Phaser.Math.Between(1, 2), 0xffffff);
+    s.alpha = Phaser.Math.FloatBetween(0.3, 1);
+    this.stars.push(s);
+    this.tweens.add({ targets: s, alpha: Phaser.Math.FloatBetween(0.2, 1),
+      duration: Phaser.Math.Between(1000, 3000), yoyo: true, repeat: -1 });
+  }
+
+  // Ground
+  this.groundY = H * 0.78;
+  this.add.rectangle(0, this.groundY, W * 4, H * 0.22, 0x001a2e).setOrigin(0, 0);
+  this.add.rectangle(0, this.groundY, W * 4, 4, 0x00d2ff).setOrigin(0, 0);
+  this.groundStripes = [];
+  for (let i = 0; i < 50; i++) {
+    const s = this.add.rectangle(i * 80, this.groundY + 8, 3, H * 0.18, 0x000000, 0.4).setOrigin(0, 0);
+    this.groundStripes.push(s);
+  }
+
+  // Character
+  this.charX = 180; this.charY = this.groundY - 8;
+  this.charGfx = this.add.graphics();
+  this.charContainer = this.add.container(this.charX, this.charY);
+  this.charContainer.add(this.charGfx);
+  this.drawChar('idle');
+  this.tweens.add({
+    targets: this.charContainer, y: this.charY - 6,
+    duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+  });
+
+  // Particle tex
+  const pt = this.add.graphics();
+  pt.fillStyle(0x00e676, 1); pt.fillCircle(8, 8, 8);
+  pt.generateTexture('ssp', 16, 16); pt.destroy();
+  this.jumpParts = this.add.particles(0, 0, 'ssp', {
+    lifespan: 600, speed: { min: 100, max: 300 },
+    scale: { start: 0.6, end: 0 }, alpha: { start: 1, end: 0 },
+    blendMode: 'ADD', emitting: false
+  });
+  this.hurtParts = this.add.particles(0, 0, 'ssp', {
+    lifespan: 400, speed: { min: 80, max: 200 },
+    scale: { start: 0.4, end: 0 }, alpha: { start: 1, end: 0 },
+    blendMode: 'ADD', emitting: false, tint: 0xff3d57
+  });
+
+  // HUD overlay (HTML)
+  document.getElementById('phaser-hud').style.display = 'flex';
+  this.spawnSSPrompt();
+
+  const input = document.getElementById('ph-input');
+  input.value = ''; input.placeholder = 'TYPE TO DECODE'; input.focus();
+  input.onkeydown = (e) => { if (e.key === 'Enter') this.submitSS(); };
+
+  this.hudTimer = this.time.addEvent({
+    delay: 50, callback: () => this.updateHUD(), loop: true
+  });
+}
+
+SideScrollScene.prototype.drawChar = function(state) {
+  const g = this.charGfx;
+  g.clear();
+  const c = 0x00d2ff, ac = 0xffcc00;
+  g.fillStyle(c, 0.15); g.fillCircle(0, -30, 50);
+  g.fillStyle(0x1a2238, 1); g.fillRoundedRect(-15, -50, 30, 50, 4);
+  g.lineStyle(2, c, 1); g.strokeRoundedRect(-15, -50, 30, 50, 4);
+  g.fillStyle(ac, 0.4); g.fillCircle(0, -28, 8);
+  g.fillStyle(ac, 1); g.fillCircle(0, -28, 5);
+  g.fillStyle(0x1a2238, 1); g.fillRoundedRect(-12, -75, 24, 30, 4);
+  g.lineStyle(2, c, 1); g.strokeRoundedRect(-12, -75, 24, 30, 4);
+  g.fillStyle(c, 1); g.fillRoundedRect(-10, -65, 20, 8, 2);
+  g.fillStyle(0xffffff, 0.9); g.fillCircle(-5, -61, 2);
+  g.fillCircle(0, -61, 2); g.fillCircle(5, -61, 2);
+  g.lineStyle(2, c, 1); g.lineBetween(0, -75, 0, -85);
+  g.fillStyle(ac, 1); g.fillCircle(0, -86, 2);
+  g.fillStyle(0x1a2238, 1); g.fillRoundedRect(-22, -45, 8, 25, 3);
+  g.lineStyle(1.5, c, 1); g.strokeRoundedRect(-22, -45, 8, 25, 3);
+  g.fillStyle(0x1a2238, 1); g.fillRoundedRect(14, -45, 8, 25, 3);
+  g.lineStyle(1.5, c, 1); g.strokeRoundedRect(14, -45, 8, 25, 3);
+  g.fillStyle(c, 1); g.fillRect(20, -28, 35, 4);
+  g.fillStyle(ac, 1); g.fillRect(20, -28, 35, 1.5);
+  g.fillStyle(0xffffff, 1); g.fillCircle(55, -26, 3);
+  g.fillStyle(0x1a2238, 1); g.fillRoundedRect(-10, 0, 7, 20, 2);
+  g.lineStyle(1.5, c, 1); g.strokeRoundedRect(-10, 0, 7, 20, 2);
+  g.fillRoundedRect(3, 0, 7, 20, 2);
+  g.lineStyle(1.5, c, 1); g.strokeRoundedRect(3, 0, 7, 20, 2);
+  g.fillStyle(c, 1); g.fillRect(-12, 16, 11, 4); g.fillRect(1, 16, 11, 4);
+  if (state === 'hurt') { g.fillStyle(0xff3d57, 0.4); g.fillCircle(0, -30, 60); }
+};
+
+SideScrollScene.prototype.spawnSSPrompt = function() {
+  const cipher = PHASER_STATE.ciphers[Math.floor(Math.random() * PHASER_STATE.ciphers.length)];
+  const target = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  PHASER_STATE.currentPrompt = { cipher, target, encoded: encodeToCipher(target, cipher) };
+  PHASER_STATE.promptStartTime = performance.now();
+  document.getElementById('ph-prompt-bubble').style.display = 'block';
+  document.getElementById('ph-prompt-label').textContent = (cipher === 'PhoneT9' ? 'PHONE T9' : cipher.toUpperCase());
+  const content = document.getElementById('ph-prompt-content');
+  content.innerHTML = '';
+  renderCipherPrompt(content, PHASER_STATE.currentPrompt.encoded, cipher);
+  document.getElementById('ph-input').value = '';
+  document.getElementById('ph-input').focus();
+};
+
+SideScrollScene.prototype.updateHUD = function() {
+  document.getElementById('ph-dist').textContent = Math.floor(PHASER_STATE.distance) + ' m';
+  document.getElementById('ph-score').textContent = PHASER_STATE.score.toLocaleString();
+  document.getElementById('ph-combo').textContent = PHASER_STATE.combo;
+  const hearts = '♥'.repeat(PHASER_STATE.lives) + '<span style="opacity:0.2">♥</span>'.repeat(3 - PHASER_STATE.lives);
+  document.getElementById('ph-lives').innerHTML = hearts;
+  if (PHASER_STATE.currentPrompt) {
+    const elapsed = (performance.now() - PHASER_STATE.promptStartTime) / 1000;
+    const remaining = Math.max(0, PHASER_STATE.maxT - elapsed);
+    document.getElementById('ph-prompt-bar').style.width = (remaining / PHASER_STATE.maxT * 100) + '%';
+    if (remaining <= 0) this.handleSSAnswer(false, PHASER_STATE.maxT * 1000);
+  }
+};
+
+SideScrollScene.prototype.submitSS = function() {
+  if (!PHASER_STATE.currentPrompt) return;
+  const input = document.getElementById('ph-input').value.toUpperCase().replace(/\s+/g, '').trim();
+  const elapsed = performance.now() - PHASER_STATE.promptStartTime;
+  this.handleSSAnswer(input === PHASER_STATE.currentPrompt.target, elapsed);
+};
+
+SideScrollScene.prototype.handleSSAnswer = function(correct, elapsedMs) {
+  const target = PHASER_STATE.currentPrompt.target;
+  const inWindow = elapsedMs >= PHASER_STATE.minT * 1000;
+  if (correct && inWindow) {
+    PHASER_STATE.combo++; PHASER_STATE.bestCombo = Math.max(PHASER_STATE.bestCombo, PHASER_STATE.combo);
+    PHASER_STATE.decoded++;
+    const mult = comboMultiplier(PHASER_STATE.combo);
+    PHASER_STATE.score += Math.round(100 * mult);
+    // Jump tween
+    this.tweens.add({
+      targets: this.charContainer, y: this.charY - 130,
+      duration: 300, yoyo: true, ease: 'Quad.easeOut'
+    });
+    this.jumpParts.emitParticleAt(this.charX + 20, this.charY - 30, 20);
+    this.cameras.main.shake(100, 0.005);
+    Audio.jump(); Audio.correct();
+    if (!SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher])
+      SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher] = {};
+    SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] =
+      (SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] || 0) + 1;
+    if (PHASER_STATE.score > SAVE.sidescroll.bestScore) SAVE.sidescroll.bestScore = PHASER_STATE.score;
+    commitSave();
+  } else if (correct && !inWindow) {
+    PHASER_STATE.combo = 0; Audio.uiClick();
+  } else {
+    PHASER_STATE.combo = 0; PHASER_STATE.lives--;
+    this.cameras.main.flash(150, 255, 61, 87);
+    this.hurtParts.emitParticleAt(this.charX, this.charY - 30, 12);
+    this.tweens.add({
+      targets: this.charContainer, x: this.charX - 30,
+      duration: 80, yoyo: true, repeat: 3
+    });
+    Audio.hurt();
+    if (PHASER_STATE.lives <= 0) {
+      PHASER_STATE.running = false;
+      document.getElementById('phaser-hud').style.display = 'none';
+      document.getElementById('ph-prompt-bubble').style.display = 'none';
+      SAVE.sidescroll.totalRuns++;
+      if (Math.floor(PHASER_STATE.distance) > SAVE.sidescroll.bestDistance)
+        SAVE.sidescroll.bestDistance = Math.floor(PHASER_STATE.distance);
+      if (SAVE.sidescroll.bestDistance >= 5000) recordAchievement('marathoner', '馬拉松跑者');
+      commitSave();
+      Audio.reveal();
+      const endHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);z-index:80;"><div class="reveal-stage" style="border-color:var(--good);max-width:500px;"><div class="reveal-label" style="color:var(--good);">RUN COMPLETE</div><div class="result-grid mt-6"><div class="result-cell"><div class="result-cell-label">DISTANCE</div><div class="result-cell-value text-good">' + Math.floor(PHASER_STATE.distance) + ' m</div></div><div class="result-cell"><div class="result-cell-label">SCORE</div><div class="result-cell-value">' + PHASER_STATE.score.toLocaleString() + '</div></div><div class="result-cell"><div class="result-cell-label">DECODED</div><div class="result-cell-value">' + PHASER_STATE.decoded + '</div></div><div class="result-cell"><div class="result-cell-label">BEST COMBO</div><div class="result-cell-value text-gold">' + PHASER_STATE.bestCombo + '</div></div></div><div class="mt-6 flex-center gap-3"><button class="btn btn-primary btn-big" onclick="restartPhaserGame()">RUN AGAIN</button><button class="btn btn-ghost" onclick="exitPhaserGame()">MENU</button></div></div></div>';
+      const endDiv = document.createElement('div');
+      endDiv.id = 'phaser-end-overlay';
+      endDiv.innerHTML = endHTML;
+      document.getElementById('phaser-ui').appendChild(endDiv);
+      this.scene.pause();
+      return;
+    }
+  }
+  document.getElementById('ph-prompt-bubble').style.display = 'none';
+  PHASER_STATE.currentPrompt = null;
+  const delay = Math.max(300, 1000 / PHASER_STATE.spawnRate);
+  this.time.delayedCall(delay, () => {
+    if (PHASER_STATE.running) this.spawnSSPrompt();
+  });
+};
+
+SideScrollScene.prototype.update = function(time, delta) {
+  if (!PHASER_STATE.running) return;
+  const dt = delta / 1000;
+  const speedMul = PHASER_STATE.speed || 1;
+  PHASER_STATE.distance += 60 * dt * speedMul;
+  const scrollSpeed = 100 * dt * speedMul;
+  this.stars.forEach(s => { s.x -= scrollSpeed * 0.2; if (s.x < 0) s.x += this.scale.width * 3; });
+  this.groundStripes.forEach(s => { s.x -= scrollSpeed * 1.5; if (s.x < -100) s.x += 50 * 80; });
 };
 
 /* ============================================================
+   INIT
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  showScreen('landing');
+  const heroBlue = document.getElementById('hero-blue');
+  const heroWarden = document.getElementById('hero-warden');
+  if (heroBlue) heroBlue.innerHTML = CHARACTERS['cyber-blue'].buildSVG('idle');
+  if (heroWarden) heroWarden.innerHTML = CHARACTERS['cipher-warden'].buildSVG('idle');
+  const btn = document.getElementById('sound-toggle');
+  if (btn) btn.textContent = Audio.enabled ? '🔊 音效:開' : '🔇 音效:關';
+});/* ============================================================
    INIT
 ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
