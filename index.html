@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>CIPHER LAB — 反射訓練</title>
+<title>CIPHER LAB — 反射訓練:冒險旅程</title>
 <style>
 :root {
   --bg: #0a0e1a;
@@ -17,9 +17,6 @@
   --gold: #ffcc00;
   --good: #00e676;
   --bad: #ff3d57;
-  --hp-full: #00e676;
-  --hp-mid: #ffcc00;
-  --hp-low: #ff3d57;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
@@ -28,6 +25,7 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 .mono { font-family: "SF Mono", Menlo, Monaco, Consolas, monospace; }
 
@@ -35,41 +33,33 @@ body::before {
   content: '';
   position: fixed; inset: 0;
   background-image:
-    linear-gradient(rgba(0, 210, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 210, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
   z-index: 0;
 }
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: radial-gradient(ellipse at 50% 30%, rgba(124, 77, 255, 0.12) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 0;
-}
 
-.screen {
-  display: none;
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  padding: 24px;
-}
+/* ============ STAGE BACKGROUNDS ============ */
+body.stage-1 .stage-bg { background: linear-gradient(180deg, #0a2a1e 0%, #1a4a2e 35%, #2a6a4e 65%, #3a8a5e 100%); }
+body.stage-2 .stage-bg { background: linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 35%, #2a2a6e 65%, #3a3a7e 100%); }
+body.stage-3 .stage-bg { background: linear-gradient(180deg, #1a0a4e 0%, #2a1a6e 35%, #3a2a8e 65%, #4a3aae 100%); }
+body.stage-4 .stage-bg { background: linear-gradient(180deg, #2a0a0a 0%, #4a1a1a 35%, #7a2a1a 65%, #aa3a1a 100%); }
+
+body.stage-1 { --stage-primary: #00e676; --stage-secondary: #2a6a4e; }
+body.stage-2 { --stage-primary: #cc66ff; --stage-secondary: #2a2a6e; }
+body.stage-3 { --stage-primary: #00d2ff; --stage-secondary: #4a3aae; }
+body.stage-4 { --stage-primary: #ff3d57; --stage-secondary: #aa3a1a; }
+
+/* ============ SCREENS ============ */
+.screen { display: none; position: relative; z-index: 1; min-height: 100vh; padding: 24px; }
 .screen.active { display: flex; flex-direction: column; }
-
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .screen.active { animation: fadeIn 0.3s ease-out; }
 
 /* ============ LANDING ============ */
 .landing-wrap { max-width: 720px; margin: 0 auto; width: 100%; padding: 80px 0 40px; text-align: center; }
-.landing-tagline {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.3em;
-  color: var(--accent);
-  margin-bottom: 16px;
-}
+.landing-tagline { font-size: 12px; font-weight: 800; letter-spacing: 0.3em; color: var(--accent); margin-bottom: 16px; }
 .landing-title {
   font-size: clamp(48px, 8vw, 80px);
   font-weight: 900;
@@ -79,176 +69,211 @@ body::after {
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 32px rgba(0, 210, 255, 0.4));
-  margin-bottom: 24px;
-  animation: titlePulse 4s ease-in-out infinite;
+  margin-bottom: 8px;
 }
-@keyframes titlePulse {
-  0%, 100% { filter: drop-shadow(0 0 24px rgba(124, 77, 255, 0.5)); }
-  50%      { filter: drop-shadow(0 0 36px rgba(0, 210, 255, 0.7)); }
-}
-.landing-subtitle {
-  color: var(--text-dim);
-  font-size: 16px;
-  line-height: 1.6;
-  margin-bottom: 40px;
-}
-.landing-actions { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.landing-subtitle { color: var(--text-dim); font-size: 16px; line-height: 1.6; margin-bottom: 16px; }
+.landing-tag-2 { color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: 0.15em; margin-bottom: 40px; }
 .landing-mode-card {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 24px;
+  padding: 28px;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
   overflow: hidden;
-  max-width: 480px;
+  max-width: 520px;
   width: 100%;
+  margin: 0 auto;
 }
-.landing-mode-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 4px;
-  background: var(--accent);
-}
+.landing-mode-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--accent); }
 .landing-mode-card:hover {
   transform: translateY(-4px);
   border-color: var(--accent);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 32px rgba(0, 210, 255, 0.4);
 }
-.landing-mode-icon { font-size: 48px; margin-bottom: 12px; }
-.landing-mode-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
-.landing-mode-desc { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5; }
-.landing-mode-meta {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  padding: 4px 12px;
-  border-radius: 6px;
-  background: var(--accent);
-  color: var(--bg);
-  display: inline-block;
-}
+.landing-mode-icon { font-size: 56px; margin-bottom: 16px; }
+.landing-mode-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.landing-mode-desc { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.6; }
+.landing-mode-meta { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 6px 12px; border-radius: 6px; background: var(--accent); color: var(--bg); display: inline-block; }
 
 .landing-extras { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .text-dim { color: var(--text-dim); }
 
 /* ============ BUTTONS ============ */
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--panel-2);
-  color: var(--text);
-  border: 1px solid var(--line);
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s;
-  user-select: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+  padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s; user-select: none;
 }
 .btn:hover { border-color: var(--accent); transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
-.btn-primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-size: 18px; padding: 16px 36px; border-radius: 12px; }
-.btn-primary:hover { background: #33ddff; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 210, 255, 0.4); }
+.btn-primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.btn-primary:hover { background: #33ddff; }
 .btn-big { font-size: 18px; padding: 16px 32px; border-radius: 12px; }
 .btn-ghost { background: transparent; }
 .btn-small { padding: 8px 14px; font-size: 12px; border-radius: 6px; }
-
-.back-btn {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-}
+.back-btn { position: absolute; top: 24px; left: 24px; z-index: 10; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); }
 
 /* ============ COMBO BAR ============ */
-.combo-wrap { padding: 0 0 16px; }
-.combo-bar {
-  position: relative;
-  height: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 7px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-}
-.combo-fill {
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 100%;
-  background: linear-gradient(90deg, #00e676 0%, #00d2ff 50%, #ffcc00 80%, #ff3d57 100%);
-  background-size: 200% 100%;
-  background-position: 0% 50%;
-  border-radius: 7px;
-  transition: width 0.05s linear, background-position 0.05s linear;
-  box-shadow: 0 0 12px rgba(0, 210, 255, 0.4);
-}
-.combo-multiplier {
-  position: absolute;
-  top: -4px;
-  right: 12px;
-  background: var(--bg);
-  border: 2px solid var(--accent);
-  border-radius: 999px;
-  padding: 2px 12px;
-  font-size: 14px;
-  font-weight: 900;
-  font-family: "SF Mono", monospace;
-  transform: translateY(-50%);
-  z-index: 2;
-}
+.combo-wrap { padding: 0 0 12px; position: relative; }
+.combo-bar { position: relative; height: 14px; background: rgba(255, 255, 255, 0.05); border-radius: 7px; overflow: hidden; border: 1px solid var(--line); }
+.combo-fill { position: absolute; top: 0; left: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, #00e676 0%, #00d2ff 50%, #ffcc00 80%, #ff3d57 100%); background-size: 200% 100%; background-position: 0% 50%; border-radius: 7px; transition: width 0.05s linear, background-position 0.05s linear; box-shadow: 0 0 12px rgba(0, 210, 255, 0.4); }
+.combo-multiplier { position: absolute; top: -4px; right: 12px; background: var(--bg); border: 2px solid var(--accent); border-radius: 999px; padding: 2px 12px; font-size: 14px; font-weight: 900; font-family: "SF Mono", monospace; transform: translateY(-50%); z-index: 2; }
 .combo-multiplier.bump { animation: comboBump 0.3s ease-out; }
-@keyframes comboBump {
-  0% { transform: translateY(-50%) scale(1); }
-  50% { transform: translateY(-50%) scale(1.4); color: var(--gold); }
-  100% { transform: translateY(-50%) scale(1); }
-}
+@keyframes comboBump { 0% { transform: translateY(-50%) scale(1); } 50% { transform: translateY(-50%) scale(1.4); color: var(--gold); } 100% { transform: translateY(-50%) scale(1); } }
 
 .combo-count { display: inline-flex; align-items: baseline; gap: 6px; font-family: "SF Mono", monospace; }
-.combo-num { font-size: 48px; font-weight: 900; line-height: 1; }
+.combo-num { font-size: 42px; font-weight: 900; line-height: 1; }
 .combo-num.bounce { animation: numBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); color: var(--good); }
 .combo-num.shatter { animation: numShatter 0.5s ease-out; color: var(--bad); }
 @keyframes numBounce { 0% { transform: scale(0.6); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
-@keyframes numShatter {
-  0% { transform: scale(1); opacity: 1; }
-  40% { transform: scale(1.4) rotate(8deg); color: var(--bad); }
-  100% { transform: scale(0.4) rotate(-15deg); opacity: 0; }
-}
+@keyframes numShatter { 0% { transform: scale(1); opacity: 1; } 40% { transform: scale(1.4) rotate(8deg); color: var(--bad); } 100% { transform: scale(0.4) rotate(-15deg); opacity: 0; } }
 .combo-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.15em; font-weight: 800; }
 
 /* ============ HUD ============ */
 .hud {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; padding: 12px 0; flex-wrap: wrap;
+  gap: 12px; padding: 12px 0; flex-wrap: wrap;
+  background: rgba(10, 14, 26, 0.5); border-radius: 12px;
+  padding: 10px 14px; backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.05);
 }
 .hud-stat { display: flex; flex-direction: column; gap: 2px; }
-.hud-stat-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.15em; font-weight: 800; }
-.hud-stat-value { font-family: "SF Mono", monospace; font-size: 22px; font-weight: 900; }
+.hud-stat-label { font-size: 9px; color: var(--text-dim); letter-spacing: 0.15em; font-weight: 800; }
+.hud-stat-value { font-family: "SF Mono", monospace; font-size: 20px; font-weight: 900; }
+
+/* ============ STAGE INTRO / TRANSITION ============ */
+.stage-intro {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.stage-intro.active { display: flex; animation: fadeIn 0.4s; }
+.stage-intro-card {
+  background: var(--panel);
+  border: 2px solid var(--stage-primary, var(--accent));
+  border-radius: 16px;
+  padding: 48px 36px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.stage-intro-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, var(--stage-primary, var(--accent)) 0%, transparent 70%);
+  opacity: 0.2;
+  pointer-events: none;
+}
+.stage-intro-tag { font-size: 11px; letter-spacing: 0.3em; color: var(--stage-primary, var(--accent)); font-weight: 800; margin-bottom: 8px; position: relative; }
+.stage-intro-title { font-size: 36px; font-weight: 900; margin-bottom: 12px; color: var(--text); position: relative; }
+.stage-intro-sub { color: var(--text-dim); font-size: 14px; margin-bottom: 32px; position: relative; }
+.stage-intro-enemy { font-size: 80px; margin-bottom: 16px; position: relative; }
+.stage-intro-enemy.entrance { animation: enemyEntrance 0.8s ease-out; }
+@keyframes enemyEntrance {
+  0% { transform: translateX(400px) rotate(180deg); opacity: 0; }
+  60% { transform: translateX(-30px) rotate(-10deg); opacity: 1; }
+  100% { transform: translateX(0) rotate(0); opacity: 1; }
+}
 
 /* ============ PLAY SCREEN ============ */
-.play-wrap { max-width: 720px; margin: 0 auto; width: 100%; padding: 60px 0 40px; }
-.play-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-.play-title { font-size: 18px; font-weight: 800; }
+.play-wrap { max-width: 720px; margin: 0 auto; width: 100%; padding: 20px 0 40px; position: relative; }
+.play-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.play-title { font-size: 16px; font-weight: 800; letter-spacing: 0.1em; }
+.stage-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--stage-primary, var(--line));
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.stage-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--stage-primary, var(--accent)); box-shadow: 0 0 8px var(--stage-primary, var(--accent)); }
 
-/* ============ CIPHER PROMPT ============ */
+/* ============ ADVENTURE STAGE (game world) ============ */
+.stage-world {
+  position: relative;
+  height: 280px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #0a2a1e 0%, #1a4a2e 100%);
+  transition: background 0.5s;
+}
+.stage-bg { position: absolute; inset: 0; pointer-events: none; }
+.stage-scenery { position: absolute; bottom: 0; left: 0; right: 0; height: 60%; pointer-events: none; }
+
+/* parallax ground */
+.stage-ground {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 50px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%);
+  border-top: 2px solid var(--stage-primary, var(--accent));
+}
+.stage-ground::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background-image: repeating-linear-gradient(90deg, transparent 0, transparent 60px, rgba(255,255,255,0.15) 60px, rgba(255,255,255,0.15) 62px);
+  animation: groundScroll 4s linear infinite;
+}
+@keyframes groundScroll { 0% { background-position: 0 0; } 100% { background-position: -60px 0; } }
+
+/* character */
+.character {
+  position: absolute;
+  bottom: 60px; left: 80px;
+  width: 70px; height: 90px;
+  z-index: 10;
+  transition: transform 0.3s ease-out;
+  animation: charBob 1.5s ease-in-out infinite;
+}
+@keyframes charBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.character.jump { animation: charJump 0.5s ease-out; }
+@keyframes charJump { 0% { transform: translateY(0) scale(1); } 30% { transform: translateY(-90px) scaleY(1.1); } 60% { transform: translateY(-90px) scaleY(1.1); } 100% { transform: translateY(0) scale(1); } }
+.character.hurt { animation: charHurt 0.4s ease-out; }
+@keyframes charHurt { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-12px); } 75% { transform: translateX(8px); } }
+
+/* enemy */
+.enemy {
+  position: absolute;
+  bottom: 60px; right: -100px;
+  width: 80px; height: 80px;
+  z-index: 10;
+  transition: right 0.6s ease-out, opacity 0.4s;
+}
+.enemy.entering { right: 40px; }
+.enemy.hit { animation: enemyHit 0.4s; }
+@keyframes enemyHit { 0% { transform: translateX(0) scale(1); } 30% { transform: translateX(-20px) scale(1.2); filter: brightness(2); } 100% { transform: translateX(0) scale(1); filter: brightness(1); } }
+.enemy.dying { animation: enemyDie 0.6s ease-out forwards; }
+@keyframes enemyDie { 0% { transform: scale(1) rotate(0); opacity: 1; } 50% { transform: scale(1.5) rotate(180deg); opacity: 0.5; } 100% { transform: scale(0) rotate(360deg); opacity: 0; } }
+
+/* prompt area */
 .prompt-frame {
   background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
   border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 36px 24px;
+  border-radius: 16px;
+  padding: 24px 20px;
   text-align: center;
   position: relative;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
-.prompt-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.2em; font-weight: 800; margin-bottom: 16px; }
+.prompt-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.2em; font-weight: 800; margin-bottom: 12px; }
 .prompt-content { font-family: "SF Mono", monospace; font-weight: 900; line-height: 1.2; word-spacing: 0.3em; }
-.prompt-content.size-xl { font-size: clamp(40px, 7vw, 72px); color: var(--gold); }
-.prompt-content.size-l  { font-size: clamp(28px, 5vw, 48px); color: var(--accent); }
+.prompt-content.size-xl { font-size: clamp(36px, 6vw, 60px); color: var(--gold); }
+.prompt-content.size-l { font-size: clamp(24px, 4vw, 40px); color: var(--accent); }
 
 .prompt-frame.correct { animation: correctPulse 0.4s; }
 .prompt-frame.wrong { animation: wrongShake 0.4s; }
@@ -271,10 +296,10 @@ body::after {
   background: var(--bg);
   border: 2px solid var(--line);
   border-radius: 14px;
-  padding: 18px 20px;
+  padding: 16px 20px;
   color: var(--text);
   font-family: "SF Mono", monospace;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 900;
   letter-spacing: 0.1em;
   text-align: center;
@@ -282,74 +307,20 @@ body::after {
   outline: none;
   transition: border-color 0.15s;
 }
-.input-mega:focus { border-color: var(--accent); box-shadow: 0 0 24px rgba(0, 210, 255, 0.35); }
+.input-mega:focus { border-color: var(--stage-primary, var(--accent)); box-shadow: 0 0 24px var(--stage-primary-glow, rgba(0, 210, 255, 0.35)); }
 .input-mega::placeholder { color: var(--text-dim); opacity: 0.4; }
 
 .input-std {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: var(--text);
-  font-size: 14px;
-  outline: none;
-  width: 100%;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; width: 100%;
 }
 .input-std:focus { border-color: var(--accent); }
 
-/* ============ VFX ============ */
-.vfx-layer {
-  position: fixed; inset: 0;
-  pointer-events: none;
-  z-index: 100;
-  overflow: hidden;
-}
-.particle {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-.particle.good { background: var(--good); box-shadow: 0 0 8px var(--good); }
-.particle.bad  { background: var(--bad);  box-shadow: 0 0 8px var(--bad); }
-.particle.gold { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
-
-@keyframes particleFly {
-  0% { transform: translate(0,0) scale(1); opacity: 1; }
-  100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
-}
-
-.screen-flash {
-  position: fixed; inset: 0;
-  pointer-events: none;
-  z-index: 99;
-  animation: flashFade 0.3s ease-out forwards;
-}
-.screen-flash.good { background: radial-gradient(circle, rgba(0, 230, 118, 0.4) 0%, transparent 70%); }
-.screen-flash.bad  { background: radial-gradient(circle, rgba(255, 61, 87, 0.5) 0%, transparent 70%); }
-@keyframes flashFade { 0% { opacity: 1; } 100% { opacity: 0; } }
-
-/* ============ SETTINGS ============ */
-.settings-wrap { max-width: 720px; margin: 0 auto; width: 100%; padding: 60px 0 40px; }
-.settings-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
-.settings-card h3 { font-size: 14px; font-weight: 800; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 16px; text-transform: uppercase; }
-
-.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.04); }
-.setting-row:first-child { border-top: 0; }
-.setting-label { font-size: 14px; }
-.setting-label small { color: var(--text-dim); display: block; font-size: 11px; margin-top: 2px; }
-
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer;
   transition: all 0.15s;
 }
 .chip:hover { border-color: var(--accent); }
@@ -359,60 +330,61 @@ body::after {
 .slider-row input[type="range"] { flex: 1; }
 .slider-val { font-family: "SF Mono", monospace; font-weight: 900; min-width: 50px; text-align: right; color: var(--accent); }
 
-/* ============ RESULTS / WEAK PANEL ============ */
-.result-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-  margin: 24px 0;
-}
-.result-cell {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-}
-.result-cell-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.15em; font-weight: 800; }
-.result-cell-value { font-family: "SF Mono", monospace; font-size: 32px; font-weight: 900; margin-top: 8px; }
+.settings-wrap { max-width: 720px; margin: 0 auto; width: 100%; padding: 60px 0 40px; }
+.settings-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+.settings-card h3 { font-size: 14px; font-weight: 800; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 16px; text-transform: uppercase; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.04); }
+.setting-row:first-child { border-top: 0; }
+.setting-label { font-size: 14px; }
+.setting-label small { color: var(--text-dim); display: block; font-size: 11px; margin-top: 2px; }
 
-.weak-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; }
-.weak-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.15em; font-weight: 800; margin-bottom: 8px; }
-.weak-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.weak-letter {
-  background: rgba(255, 61, 87, 0.15);
-  border: 1px solid var(--bad);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-family: "SF Mono", monospace;
+/* ============ VFX ============ */
+.vfx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 100; overflow: hidden; }
+.particle { position: absolute; border-radius: 50%; pointer-events: none; }
+.particle.good { background: var(--good); box-shadow: 0 0 8px var(--good); }
+.particle.bad  { background: var(--bad);  box-shadow: 0 0 8px var(--bad); }
+.particle.gold { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+@keyframes particleFly { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
+
+.screen-flash { position: fixed; inset: 0; pointer-events: none; z-index: 99; animation: flashFade 0.3s ease-out forwards; }
+.screen-flash.good { background: radial-gradient(circle, rgba(0, 230, 118, 0.4) 0%, transparent 70%); }
+.screen-flash.bad  { background: radial-gradient(circle, rgba(255, 61, 87, 0.5) 0%, transparent 70%); }
+@keyframes flashFade { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+/* damage floater */
+.damage-float {
+  position: absolute;
+  font-size: 28px;
   font-weight: 900;
-  font-size: 13px;
-  color: var(--bad);
+  color: var(--good);
+  text-shadow: 0 0 12px rgba(0, 230, 118, 0.8), 0 0 4px rgba(0,0,0,0.8);
+  pointer-events: none;
+  animation: floatUp 1s ease-out forwards;
+  font-family: "SF Mono", monospace;
+  z-index: 20;
 }
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  20% { transform: translateY(-10px) scale(1.2); opacity: 1; }
+  100% { transform: translateY(-80px) scale(0.9); opacity: 0; }
+}
+
+/* ============ STATS / RESULTS ============ */
+.result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 16px 0; }
+.result-cell { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; text-align: center; }
+.result-cell-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.15em; font-weight: 800; }
+.result-cell-value { font-family: "SF Mono", monospace; font-size: 26px; font-weight: 900; margin-top: 6px; }
+
+.weak-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-top: 12px; }
+.weak-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.15em; font-weight: 800; margin-bottom: 6px; }
+.weak-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.weak-letter { background: rgba(255, 61, 87, 0.15); border: 1px solid var(--bad); border-radius: 6px; padding: 4px 10px; font-family: "SF Mono", monospace; font-weight: 900; font-size: 13px; color: var(--bad); }
 .weak-letter small { color: var(--text-dim); font-weight: 600; margin-left: 4px; }
 
 /* ============ STATS MODAL ============ */
-#stats-modal {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(8px);
-  z-index: 200;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
+#stats-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 24px; }
 #stats-modal.active { display: flex; }
-.stats-stage {
-  background: linear-gradient(180deg, var(--panel) 0%, var(--bg) 100%);
-  border: 2px solid var(--accent);
-  border-radius: 16px;
-  padding: 32px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
+.stats-stage { background: linear-gradient(180deg, var(--panel) 0%, var(--bg) 100%); border: 2px solid var(--accent); border-radius: 16px; padding: 32px; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto; }
 .stats-title { font-size: 16px; color: var(--accent); letter-spacing: 0.3em; font-weight: 800; margin-bottom: 16px; }
 .stats-section { margin: 16px 0; padding: 16px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid var(--line); }
 .stats-section h4 { font-size: 12px; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 8px; font-weight: 800; }
@@ -431,10 +403,10 @@ body::after {
 .flex-center { display: flex; align-items: center; justify-content: center; }
 .gap-3 { gap: 12px; }
 
-.reveal-wrap { max-width: 720px; margin: 0 auto; padding: 80px 24px; text-align: center; }
+.reveal-wrap { max-width: 720px; margin: 0 auto; padding: 40px 24px; text-align: center; }
 </style>
 </head>
-<body>
+<body class="stage-1">
 
 <div class="vfx-layer" id="vfx-layer"></div>
 
@@ -443,19 +415,21 @@ body::after {
 ============================================================ -->
 <div id="landing" class="screen active">
   <div class="landing-wrap">
-    <div class="landing-tagline">// CIPHER PROTOCOL v1.0 //</div>
+    <div class="landing-tagline">// CIPHER PROTOCOL v1.1 //</div>
     <div class="landing-title">CIPHER LAB</div>
     <div class="landing-subtitle">
       解碼密碼 · 鍛鍊反射 · 破解訊息
     </div>
+    <div class="landing-tag-2">▶ 4 個關卡 · 遇到怪物 · 擊敗最終 Boss</div>
     <div class="landing-actions">
-      <div class="landing-mode-card" onclick="enterReflex()">
-        <div class="landing-mode-icon">⚡</div>
-        <div class="landing-mode-title">反射訓練</div>
+      <div class="landing-mode-card" onclick="enterAdventure()">
+        <div class="landing-mode-icon">⚔️</div>
+        <div class="landing-mode-title">冒險旅程</div>
         <div class="landing-mode-desc">
-          隨機單 / 多字母題目。加權偏重你常錯的字母。Combo Chain 節奏 — 越快越準,分數越高。
+          從密碼森林開始,穿越洞窟、高塔,挑戰最終 Boss。<br>
+          答對擊敗怪物 · Combo 越高傷害越大 · 弱點字母自動學習
         </div>
-        <span class="landing-mode-meta">6 種反射密碼 · 單人</span>
+        <span class="landing-mode-meta">4 關 · 6 種密碼 · 全程存檔</span>
       </div>
     </div>
     <div class="landing-extras mt-6">
@@ -464,7 +438,7 @@ body::after {
       <button class="btn btn-small btn-ghost" onclick="resetSave()">🗑 重置紀錄</button>
     </div>
     <div class="text-center mt-6 text-dim" style="font-size: 12px; letter-spacing: 0.1em;">
-      v1.0 · 一個小遊戲 · 一次一個
+      v1.1 · 反射訓練深挖 · 一次一個模式
     </div>
   </div>
 </div>
@@ -483,151 +457,144 @@ body::after {
 </div>
 
 <!-- ============================================================
-     REFLEX DRILL
+     STAGE INTRO / TRANSITION
 ============================================================ -->
-<div id="reflex" class="screen">
-  <button class="btn btn-ghost back-btn" onclick="exitReflex()">← 返回</button>
-
-  <!-- SETUP -->
-  <div id="reflex-setup" class="settings-wrap">
-    <div class="play-header"><div class="play-title">⚡ 反射訓練</div></div>
-
-    <div class="settings-card">
-      <h3>啟用密碼</h3>
-      <div class="chip-row" id="reflex-cipher-chips"></div>
-    </div>
-
-    <div class="settings-card">
-      <h3>題目設定</h3>
-      <div class="setting-row">
-        <div class="setting-label">長度</div>
-        <div class="chip-row">
-          <div class="chip" data-len="1" onclick="setReflexLen(this, 1)">1 字母</div>
-          <div class="chip active" data-len="2" onclick="setReflexLen(this, 2)">2 字母</div>
-          <div class="chip" data-len="3" onclick="setReflexLen(this, 3)">3 字母</div>
-          <div class="chip" data-len="4" onclick="setReflexLen(this, 4)">4 字母</div>
-        </div>
-      </div>
-      <div class="setting-row">
-        <div class="setting-label">題目數量</div>
-        <div class="chip-row">
-          <div class="chip" data-n="10" onclick="setReflexN(this, 10)">10</div>
-          <div class="chip active" data-n="20" onclick="setReflexN(this, 20)">20</div>
-          <div class="chip" data-n="30" onclick="setReflexN(this, 30)">30</div>
-          <div class="chip" data-n="50" onclick="setReflexN(this, 50)">50</div>
-        </div>
-      </div>
-      <div class="setting-row">
-        <div class="setting-label">弱點加權<small>重複你常錯的字母,學得更有效</small></div>
-        <div class="chip-row">
-          <div class="chip active" data-w="1" onclick="setReflexWeight(this, 1)">開啟</div>
-          <div class="chip" data-w="0" onclick="setReflexWeight(this, 0)">關閉</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="settings-card">
-      <h3>時間設定</h3>
-      <div class="setting-row">
-        <div class="setting-label">minT(防反射地板)<small>低於此算「太快」</small></div>
-        <div class="slider-row">
-          <input type="range" id="reflex-minT" min="0.4" max="2.0" step="0.2" value="0.8" oninput="updateReflexTiming()">
-          <div class="slider-val" id="reflex-minT-val">0.8s</div>
-        </div>
-      </div>
-      <div class="setting-row">
-        <div class="setting-label">maxT(連擊中斷上限)<small>超過此中斷連擊</small></div>
-        <div class="slider-row">
-          <input type="range" id="reflex-maxT" min="3" max="20" step="1" value="8" oninput="updateReflexTiming()">
-          <div class="slider-val" id="reflex-maxT-val">8.0s</div>
-        </div>
-      </div>
-    </div>
-
-    <button class="btn btn-primary btn-big" onclick="startReflex()">▶ 開始反射訓練</button>
+<div id="stage-intro" class="stage-intro">
+  <div class="stage-intro-card">
+    <div class="stage-intro-tag" id="stage-intro-tag">// STAGE 1 //</div>
+    <div class="stage-intro-enemy" id="stage-intro-enemy">🟢</div>
+    <div class="stage-intro-title" id="stage-intro-title">密碼森林</div>
+    <div class="stage-intro-sub" id="stage-intro-sub">從森林開始你的旅程</div>
+    <button class="btn btn-primary btn-big" onclick="startStage()">▶ 開始關卡</button>
   </div>
+</div>
+
+<!-- ============================================================
+     REFLEX ADVENTURE
+============================================================ -->
+<div id="adventure" class="screen">
+  <button class="btn btn-ghost back-btn" onclick="exitAdventure()">← 返回</button>
 
   <!-- PLAY -->
-  <div id="reflex-play" class="play-wrap hidden">
+  <div id="adv-play" class="play-wrap">
+    <div class="play-header">
+      <div class="play-title" id="adv-stage-name">⚔️ Stage 1: 密碼森林</div>
+      <div class="stage-badge"><span class="dot"></span><span id="adv-stage-badge">Stage 1/4</span></div>
+    </div>
+
     <div class="hud">
       <div class="hud-stat">
         <div class="hud-stat-label">分數</div>
-        <div class="hud-stat-value" id="reflex-score">0</div>
+        <div class="hud-stat-value" id="adv-score">0</div>
       </div>
       <div class="combo-count">
         <div>
           <div class="combo-label">連擊</div>
-          <div class="combo-num" id="reflex-combo">0</div>
-        </div>
-        <div>
-          <div class="combo-label">最佳</div>
-          <div class="combo-num text-gold" style="font-size: 32px;" id="reflex-best">0</div>
+          <div class="combo-num" id="adv-combo">0</div>
         </div>
       </div>
       <div class="hud-stat">
-        <div class="hud-stat-label">進度</div>
-        <div class="hud-stat-value"><span id="reflex-progress">1</span>/<span id="reflex-total">20</span></div>
+        <div class="hud-stat-label">❤ 生命</div>
+        <div class="hud-stat-value" id="adv-lives">♥♥♥</div>
+      </div>
+      <div class="hud-stat">
+        <div class="hud-stat-label">擊敗</div>
+        <div class="hud-stat-value" id="adv-defeated">0</div>
       </div>
     </div>
 
+    <!-- Adventure world -->
+    <div class="stage-world" id="stage-world">
+      <div class="stage-bg" id="stage-bg"></div>
+      <!-- scenery gets injected by JS -->
+      <div class="stage-scenery" id="stage-scenery"></div>
+      <div class="stage-ground"></div>
+
+      <!-- Character -->
+      <div class="character" id="character">
+        <svg viewBox="0 0 70 90" xmlns="http://www.w3.org/2000/svg">
+          <!-- aura -->
+          <ellipse cx="35" cy="40" rx="32" ry="35" fill="rgba(0,210,255,0.15)"/>
+          <!-- legs -->
+          <rect x="22" y="68" width="10" height="20" rx="2" fill="#1a2238" stroke="#00d2ff" stroke-width="1"/>
+          <rect x="38" y="68" width="10" height="20" rx="2" fill="#1a2238" stroke="#00d2ff" stroke-width="1"/>
+          <!-- boots -->
+          <rect x="20" y="84" width="14" height="4" fill="#00d2ff"/>
+          <rect x="36" y="84" width="14" height="4" fill="#00d2ff"/>
+          <!-- body -->
+          <rect x="20" y="35" width="30" height="35" rx="3" fill="#1a2238" stroke="#00d2ff" stroke-width="2"/>
+          <!-- chest core -->
+          <circle cx="35" cy="50" r="5" fill="#ffcc00"/>
+          <circle cx="35" cy="50" r="3" fill="#ffffff"/>
+          <!-- shoulders -->
+          <path d="M 12 40 L 20 35 L 20 55 L 10 50 Z" fill="#1a2238" stroke="#00d2ff" stroke-width="1.5"/>
+          <path d="M 58 40 L 50 35 L 50 55 L 60 50 Z" fill="#1a2238" stroke="#00d2ff" stroke-width="1.5"/>
+          <!-- arms -->
+          <rect x="14" y="42" width="8" height="20" rx="2" fill="#1a2238" stroke="#00d2ff" stroke-width="1"/>
+          <rect x="48" y="42" width="8" height="20" rx="2" fill="#1a2238" stroke="#00d2ff" stroke-width="1"/>
+          <!-- helmet -->
+          <path d="M 22 12 Q 35 4 48 12 L 49 32 L 21 32 Z" fill="#1a2238" stroke="#00d2ff" stroke-width="2"/>
+          <!-- visor -->
+          <rect x="24" y="18" width="22" height="6" rx="1" fill="#00d2ff"/>
+          <circle cx="30" cy="21" r="1.5" fill="#ffffff"/>
+          <circle cx="35" cy="21" r="1.5" fill="#ffffff"/>
+          <circle cx="40" cy="21" r="1.5" fill="#ffffff"/>
+          <!-- antenna -->
+          <line x1="35" y1="4" x2="35" y2="-4" stroke="#00d2ff" stroke-width="1.5"/>
+          <circle cx="35" cy="-5" r="2" fill="#ffcc00"/>
+        </svg>
+      </div>
+
+      <!-- Enemy -->
+      <div class="enemy" id="enemy"></div>
+    </div>
+
+    <!-- Combo bar -->
     <div class="combo-wrap">
-      <div class="combo-multiplier" id="reflex-mult">×1.0</div>
-      <div class="combo-bar"><div class="combo-fill" id="reflex-bar"></div></div>
+      <div class="combo-multiplier" id="adv-mult">×1.0</div>
+      <div class="combo-bar"><div class="combo-fill" id="adv-bar"></div></div>
     </div>
 
-    <div class="prompt-frame" id="reflex-frame">
-      <div class="prompt-label" id="reflex-cipher-label">MORSE</div>
-      <div class="prompt-content size-xl" id="reflex-prompt">--</div>
+    <!-- Cipher prompt -->
+    <div class="prompt-frame" id="adv-frame">
+      <div class="prompt-label" id="adv-cipher-label">MORSE</div>
+      <div class="prompt-content size-xl" id="adv-prompt">--</div>
     </div>
 
-    <input class="input-mega" id="reflex-input" placeholder="輸入答案 · Enter 送出" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <input class="input-mega" id="adv-input" placeholder="輸入答案 · Enter 送出" autocomplete="off" autocapitalize="characters" spellcheck="false">
 
     <div class="weak-panel">
       <div class="weak-label">你目前的弱點字母(自動加權中)</div>
-      <div class="weak-list" id="reflex-weak-list"><span class="text-dim" style="font-size: 12px;">開始玩就會發現</span></div>
+      <div class="weak-list" id="adv-weak-list"><span class="text-dim" style="font-size: 12px;">擊敗更多怪物來發現弱點</span></div>
     </div>
   </div>
 
-  <!-- END -->
-  <div id="reflex-end" class="reveal-wrap hidden">
-    <h2 style="font-size: 28px; font-weight: 900; margin-bottom: 8px; background: linear-gradient(120deg, var(--accent), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent;">訓練完成</h2>
-    <p class="text-dim mb-4">繼續努力。底下的弱點字母記得在 Study 模式裡多練。</p>
-    <div class="result-grid">
-      <div class="result-cell"><div class="result-cell-label">分數</div><div class="result-cell-value" id="reflex-end-score">0</div></div>
-      <div class="result-cell"><div class="result-cell-label">準確率</div><div class="result-cell-value" id="reflex-end-acc">0%</div></div>
-      <div class="result-cell"><div class="result-cell-label">最佳連擊</div><div class="result-cell-value text-gold" id="reflex-end-best">0</div></div>
-      <div class="result-cell"><div class="result-cell-label">平均時間</div><div class="result-cell-value" id="reflex-end-avg">0s</div></div>
-    </div>
+  <!-- GAME COMPLETE (after stage 4) -->
+  <div id="adv-complete" class="reveal-wrap hidden">
+    <h2 style="font-size: 36px; font-weight: 900; margin-bottom: 8px; background: linear-gradient(120deg, #00e676, #ffcc00, #00d2ff); -webkit-background-clip: text; background-clip: text; color: transparent;">🏆 旅程完成</h2>
+    <p class="text-dim mb-4">你擊敗了所有怪物,從密碼森林走到了龍之巢穴。</p>
+    <div class="result-grid" id="adv-complete-stats"></div>
     <div class="weak-panel">
-      <div class="weak-label">這局最弱的字母</div>
-      <div class="weak-list" id="reflex-end-weak"></div>
+      <div class="weak-label">這次旅程最弱的字母</div>
+      <div class="weak-list" id="adv-complete-weak"></div>
     </div>
     <div class="mt-6 flex-center gap-3">
-      <button class="btn btn-primary btn-big" onclick="enterReflex()">▶ 再玩一次</button>
-      <button class="btn btn-ghost" onclick="exitReflex()">回首頁</button>
+      <button class="btn btn-primary btn-big" onclick="enterAdventure()">▶ 再冒險一次</button>
+      <button class="btn btn-ghost" onclick="exitAdventure()">回首頁</button>
     </div>
   </div>
 </div>
 
 <script>
 // ============================================================
-// CIPHERS (English only, output always A-Z)
+// CIPHERS
 // ============================================================
 const MORSE = {'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....','I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..'};
-const PIGPEN = {
-  'A':'M35,10 L35,35 L10,35','B':'M10,10 L10,35 L35,35 L35,10','C':'M10,10 L10,35 L35,35','D':'M10,10 L35,10 L35,35 L10,35',
-  'E':'M10,10 L35,10 L35,35 L10,35 Z','F':'M35,10 L10,10 L10,35 L35,35','G':'M35,35 L35,10 L10,10','H':'M10,35 L10,10 L35,10 L35,35',
-  'I':'M10,35 L10,10 L35,10','J':['M35,10 L35,35 L10,35',true],'K':['M10,10 L10,35 L35,35 L35,10',true],
-  'L':['M10,10 L10,35 L35,35',true],'M':['M10,10 L35,10 L35,35 L10,35',true],
-  'N':['M10,10 L35,10 L35,35 L10,35 Z',true],'O':['M35,10 L10,10 L10,35 L35,35',true],'P':['M35,35 L35,10 L10,10',true],
-  'Q':['M10,35 L10,10 L35,10 L35,35',true],'R':['M10,35 L10,10 L35,10',true],
-  'S':'M10,10 L22.5,22.5 L35,10','T':'M35,10 L22.5,22.5 L35,35','U':'M10,35 L22.5,22.5 L35,35','V':'M10,10 L22.5,22.5 L10,35',
-  'W':['M10,10 L22.5,22.5 L35,10',true,{x:22.5,y:15}],'X':['M35,10 L22.5,22.5 L35,35',true,{x:30,y:22.5}],
-  'Y':['M10,35 L22.5,22.5 L35,35',true,{x:22.5,y:30}],'Z':['M10,10 L22.5,22.5 L10,35',true,{x:15,y:22.5}]
-};
 const BRAILLE = {'A':[1],'B':[1,2],'C':[1,4],'D':[1,4,5],'E':[1,5],'F':[1,2,4],'G':[1,2,4,5],'H':[1,2,5],'I':[2,4],'J':[2,4,5],'K':[1,3],'L':[1,2,3],'M':[1,3,4],'N':[1,3,4,5],'O':[1,3,5],'P':[1,2,3,4],'Q':[1,2,3,4,5],'R':[1,2,3,5],'S':[2,3,4],'T':[2,3,4,5],'U':[1,3,6],'V':[1,2,3,6],'W':[2,4,5,6],'X':[1,3,4,6],'Y':[1,3,4,5,6],'Z':[1,3,5,6]};
 const PHONE = {'A':'2-1','B':'2-2','C':'2-3','D':'3-1','E':'3-2','F':'3-3','G':'4-1','H':'4-2','I':'4-3','J':'5-1','K':'5-2','L':'5-3','M':'6-1','N':'6-2','O':'6-3','P':'7-1','Q':'7-2','R':'7-3','S':'7-4','T':'8-1','U':'8-2','V':'8-3','W':'9-1','X':'9-2','Y':'9-3','Z':'9-4'};
-const CIPHERS = ['Morse','Semaphore','Pigpen','Grid','PhoneT9','Braille'];
+
+// Only 4 ciphers for the adventure (keep simple, focus on fun)
+const ADVENTURE_CIPHERS = ['Morse', 'Pigpen', 'Grid', 'Braille'];
 
 function encodeToCipher(text, type) {
   text = text.toUpperCase();
@@ -642,9 +609,7 @@ function encodeToCipher(text, type) {
       return key[i%5] + key[Math.floor(i/5)];
     }).join(' ');
   }
-  if (type === 'PhoneT9') return text.split('').map(c => c === ' ' ? '/' : (PHONE[c] || c)).join(' ');
   if (type === 'Braille') return text.split('').map(c => c === ' ' ? '·' : c).join(' ');
-  if (type === 'Semaphore') return text.split('').map(c => c === ' ' ? '·' : c).join(' ');
   return text;
 }
 
@@ -660,10 +625,20 @@ function renderCipherPrompt(container, text, type) {
       container.appendChild(span);
     });
   } else if (type === 'Pigpen') {
+    const PIGPEN = {
+      'A':'M35,10 L35,35 L10,35','B':'M10,10 L10,35 L35,35 L35,10','C':'M10,10 L10,35 L35,35','D':'M10,10 L35,10 L35,35 L10,35',
+      'E':'M10,10 L35,10 L35,35 L10,35 Z','F':'M35,10 L10,10 L10,35 L35,35','G':'M35,35 L35,10 L10,10','H':'M10,35 L10,10 L35,10 L35,35',
+      'I':'M10,35 L10,10 L35,10','J':['M35,10 L35,35 L10,35',true],'K':['M10,10 L10,35 L35,35 L35,10',true],
+      'L':['M10,10 L10,35 L35,35',true],'M':['M10,10 L35,10 L35,35 L10,35',true],
+      'N':['M10,10 L35,10 L35,35 L10,35 Z',true],'O':['M35,10 L10,10 L10,35 L35,35',true],'P':['M35,35 L35,10 L10,10',true],
+      'Q':['M10,35 L10,10 L35,10 L35,35',true],'R':['M10,35 L10,10 L35,10',true],
+      'S':'M10,10 L22.5,22.5 L35,10','T':'M35,10 L22.5,22.5 L35,35','U':'M10,35 L22.5,22.5 L35,35','V':'M10,10 L22.5,22.5 L10,35',
+      'W':['M10,10 L22.5,22.5 L35,10',true,{x:22.5,y:15}],'X':['M35,10 L22.5,22.5 L35,35',true,{x:30,y:22.5}],
+      'Y':['M10,35 L22.5,22.5 L35,35',true,{x:22.5,y:30}],'Z':['M10,10 L22.5,22.5 L10,35',true,{x:15,y:22.5}]
+    };
     const svgNS = 'http://www.w3.org/2000/svg';
     const wrap = document.createElement('div');
-    wrap.style.display = 'inline-flex'; wrap.style.flexWrap = 'wrap';
-    wrap.style.gap = '4px'; wrap.style.justifyContent = 'center'; wrap.style.alignItems = 'center';
+    wrap.style.cssText = 'display:inline-flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;';
     text.split('').forEach(ch => {
       if (ch === '·') { const s = document.createElement('span'); s.textContent = '  '; wrap.appendChild(s); return; }
       const data = PIGPEN[ch.toUpperCase()];
@@ -671,8 +646,8 @@ function renderCipherPrompt(container, text, type) {
       const path = Array.isArray(data) ? data[0] : data;
       const dot = Array.isArray(data) && data[1];
       const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('width','36'); svg.setAttribute('height','36'); svg.setAttribute('viewBox','0 0 45 45');
-      svg.style.display = 'inline-block'; svg.style.margin = '0 2px';
+      svg.setAttribute('width','32'); svg.setAttribute('height','32'); svg.setAttribute('viewBox','0 0 45 45');
+      svg.style.cssText = 'display:inline-block;margin:0 2px;';
       const p = document.createElementNS(svgNS, 'path');
       p.setAttribute('d', path); p.setAttribute('fill','none'); p.setAttribute('stroke','#ffcc00'); p.setAttribute('stroke-width','3');
       svg.appendChild(p);
@@ -686,91 +661,31 @@ function renderCipherPrompt(container, text, type) {
     container.appendChild(wrap);
   } else if (type === 'Grid') {
     const wrap = document.createElement('div');
-    wrap.style.display = 'inline-flex'; wrap.style.flexWrap = 'wrap';
-    wrap.style.gap = '6px'; wrap.style.justifyContent = 'center';
+    wrap.style.cssText = 'display:inline-flex;flex-wrap:wrap;gap:6px;justify-content:center;';
     text.split(' ').forEach(pair => {
       if (pair === '/' || pair === '') {
         const sep = document.createElement('div'); sep.style.width = '20px'; wrap.appendChild(sep); return;
       }
       const cell = document.createElement('div');
-      cell.style.background = 'rgba(255,204,0,0.15)';
-      cell.style.border = '2px solid var(--gold)';
-      cell.style.borderRadius = '6px';
-      cell.style.padding = '4px 8px';
-      cell.style.fontSize = '0.5em';
-      cell.style.fontFamily = '"SF Mono", monospace';
-      cell.style.fontWeight = '900';
-      cell.style.color = 'var(--gold)';
+      cell.style.cssText = 'background:rgba(255,204,0,0.15);border:2px solid var(--gold);border-radius:6px;padding:4px 8px;font-size:0.5em;font-family:"SF Mono",monospace;font-weight:900;color:var(--gold);';
       cell.textContent = pair;
       wrap.appendChild(cell);
     });
     container.appendChild(wrap);
-  } else if (type === 'PhoneT9') {
-    const wrap = document.createElement('div');
-    wrap.style.fontSize = '0.7em';
-    text.split('').forEach(ch => {
-      const span = document.createElement('span');
-      if (ch === '/') { span.textContent = ' '; span.style.opacity = '0.3'; }
-      else if (ch === '-') { span.innerHTML = `<span style="opacity:0.5">${ch[0]}</span><span style="color:var(--accent)">${ch.slice(1)}</span>`; }
-      else { span.textContent = ch; span.style.color = 'var(--accent)'; }
-      wrap.appendChild(span);
-    });
-    container.appendChild(wrap);
   } else if (type === 'Braille') {
     const wrap = document.createElement('div');
-    wrap.style.display = 'inline-flex'; wrap.style.flexWrap = 'wrap';
-    wrap.style.gap = '8px'; wrap.style.justifyContent = 'center'; wrap.style.alignItems = 'center';
+    wrap.style.cssText = 'display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;';
     text.split('').forEach(ch => {
       if (ch === '·') { const s = document.createElement('div'); s.style.width='20px'; wrap.appendChild(s); return; }
       const d = BRAILLE[ch.toUpperCase()] || [];
       const cell = document.createElement('div');
-      cell.style.display = 'inline-grid';
-      cell.style.gridTemplateColumns = 'repeat(2, 7px)';
-      cell.style.gridTemplateRows = 'repeat(3, 7px)';
-      cell.style.gap = '2px';
+      cell.style.cssText = 'display:inline-grid;grid-template-columns:repeat(2,7px);grid-template-rows:repeat(3,7px);gap:2px;';
       for (let i = 1; i <= 6; i++) {
         const dot = document.createElement('div');
-        dot.style.width = '7px'; dot.style.height = '7px'; dot.style.borderRadius = '50%';
-        dot.style.background = d.includes(i) ? 'var(--gold)' : 'rgba(255,255,255,0.1)';
-        if (d.includes(i)) dot.style.boxShadow = '0 0 6px var(--gold)';
+        dot.style.cssText = 'width:7px;height:7px;border-radius:50%;' + (d.includes(i) ? 'background:var(--gold);box-shadow:0 0 6px var(--gold);' : 'background:rgba(255,255,255,0.1);');
         cell.appendChild(dot);
       }
       wrap.appendChild(cell);
-    });
-    container.appendChild(wrap);
-  } else if (type === 'Semaphore') {
-    const wrap = document.createElement('div');
-    wrap.style.display = 'inline-flex'; wrap.style.flexWrap = 'wrap';
-    wrap.style.gap = '4px'; wrap.style.justifyContent = 'center'; wrap.style.alignItems = 'center';
-    const ANGLES = {'A':[180,225],'B':[180,270],'C':[180,315],'D':[180,0],'E':[0,45],'F':[0,90],'G':[0,135],'H':[225,270],'I':[225,315],'J':[90,0],'K':[225,0],'L':[225,45],'M':[225,90],'N':[225,135],'O':[270,315],'P':[270,0],'Q':[270,45],'R':[270,90],'S':[270,135],'T':[315,0],'U':[315,45],'V':[0,90],'W':[45,90],'X':[45,135],'Y':[315,90],'Z':[135,90]};
-    const svgNS = 'http://www.w3.org/2000/svg';
-    text.split('').forEach(ch => {
-      if (ch === '·') { const s = document.createElement('span'); s.textContent = '  '; wrap.appendChild(s); return; }
-      const a = ANGLES[ch.toUpperCase()];
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('width','32'); svg.setAttribute('height','40'); svg.setAttribute('viewBox','0 0 50 60');
-      svg.style.display = 'inline-block';
-      const head = document.createElementNS(svgNS, 'circle');
-      head.setAttribute('cx',25); head.setAttribute('cy',14); head.setAttribute('r',5);
-      head.setAttribute('fill','none'); head.setAttribute('stroke','#e8efff'); head.setAttribute('stroke-width','2');
-      svg.appendChild(head);
-      const body = document.createElementNS(svgNS, 'line');
-      body.setAttribute('x1',25); body.setAttribute('y1',19); body.setAttribute('x2',25); body.setAttribute('y2',38);
-      body.setAttribute('stroke','#e8efff'); body.setAttribute('stroke-width','2');
-      svg.appendChild(body);
-      if (a) {
-        a.forEach((ang, i) => {
-          const rad = (ang - 90) * Math.PI / 180;
-          const line = document.createElementNS(svgNS, 'line');
-          line.setAttribute('x1', 25); line.setAttribute('y1', 24);
-          line.setAttribute('x2', 25 + Math.cos(rad) * 16);
-          line.setAttribute('y2', 24 + Math.sin(rad) * 16);
-          line.setAttribute('stroke', i === 0 ? '#ffcc00' : '#00d2ff');
-          line.setAttribute('stroke-width', '3'); line.setAttribute('stroke-linecap', 'round');
-          svg.appendChild(line);
-        });
-      }
-      wrap.appendChild(svg);
     });
     container.appendChild(wrap);
   } else {
@@ -779,7 +694,7 @@ function renderCipherPrompt(container, text, type) {
 }
 
 // ============================================================
-// AUDIO SYSTEM
+// AUDIO
 // ============================================================
 const Audio = {
   ctx: null,
@@ -838,6 +753,9 @@ const Audio = {
   bump()    { this.sweep(880, 1760, 0.15, 'triangle', 0.7); },
   uiClick() { this.tone(800, 0.05, 'sine', 0.4); },
   reveal()  { this.sweep(220, 880, 0.4, 'sine', 0.5); },
+  hit()     { this.tone(120, 0.15, 'sawtooth', 0.5); this.noise(0.1, 0.4); },
+  enemyDie(){ this.sweep(440, 110, 0.3, 'square', 0.5); this.noise(0.2, 0.3); },
+  fanfare() { this.sweep(440, 880, 0.3, 'sine', 0.7); setTimeout(() => this.sweep(660, 1320, 0.4, 'sine', 0.7), 200); },
 };
 
 try {
@@ -846,12 +764,12 @@ try {
 } catch {}
 
 // ============================================================
-// SAVE SYSTEM
+// SAVE
 // ============================================================
 const SAVE_KEY = 'cipherLab_save';
 function defaultSave() {
   return {
-    reflex: { bestScore: 0, bestCombo: 0, totalRuns: 0, perfectRuns: 0 },
+    reflex: { bestScore: 0, bestCombo: 0, totalRuns: 0, perfectRuns: 0, stagesCleared: 0, totalEnemies: 0 },
     achievements: [],
     lastPlayed: null,
   };
@@ -863,16 +781,13 @@ function loadSave() {
     return Object.assign(defaultSave(), JSON.parse(raw));
   } catch { return defaultSave(); }
 }
-function commitSave() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch {}
-}
+function commitSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch {} }
 const SAVE = loadSave();
 
 function recordAchievement(id, name) {
   if (SAVE.achievements.includes(id)) return;
   SAVE.achievements.push(id);
   commitSave();
-  // Simple toast
   const t = document.createElement('div');
   t.textContent = '🏆 解鎖:' + name;
   t.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#1a2238,#243152);border:2px solid #ffcc00;border-radius:12px;padding:14px 24px;color:#ffcc00;font-weight:800;font-size:14px;z-index:300;box-shadow:0 8px 24px rgba(255,204,0,0.4);';
@@ -888,21 +803,26 @@ function showStats() {
   document.getElementById('stats-modal').classList.add('active');
   const c = document.getElementById('stats-content');
   const ACH = [
-    {id:'first_run',name:'首次遊玩',desc:'完成任何一局'},
-    {id:'combo_10',name:'Combo ×10',desc:'達到 10 連擊'},
-    {id:'combo_15',name:'Combo ×15',desc:'達到 15 連擊'},
-    {id:'perfect_run',name:'完美一輪',desc:'0 失誤完成一局'},
+    {id:'first_run', name:'首次遊玩', desc:'完成任何一局'},
+    {id:'combo_10', name:'Combo ×10', desc:'達到 10 連擊'},
+    {id:'combo_15', name:'Combo ×15', desc:'達到 15 連擊'},
+    {id:'perfect_run', name:'完美一輪', desc:'0 失誤完成一局'},
+    {id:'journey_done', name:'旅程完成', desc:'擊敗 4 個關卡 Boss'},
+    {id:'flawless_run', name:'無傷旅程', desc:'0 失誤完成 4 個關卡'},
   ];
   const got = new Set(SAVE.achievements);
   const achieved = ACH.filter(a => got.has(a.id));
   const locked = ACH.filter(a => !got.has(a.id));
   c.innerHTML = `
     <div class="stats-section">
-      <h4>⚡ 反射訓練</h4>
+      <h4>⚔️ 冒險旅程</h4>
       <div class="stats-row-mini">
         <div class="result-cell"><div class="result-cell-label">最佳分數</div><div class="result-cell-value text-good">${SAVE.reflex.bestScore.toLocaleString()}</div></div>
         <div class="result-cell"><div class="result-cell-label">最佳連擊</div><div class="result-cell-value text-gold">${SAVE.reflex.bestCombo}</div></div>
         <div class="result-cell"><div class="result-cell-label">總局數</div><div class="result-cell-value">${SAVE.reflex.totalRuns}</div></div>
+        <div class="result-cell"><div class="result-cell-label">關卡通關</div><div class="result-cell-value text-good">${SAVE.reflex.stagesCleared || 0} / 4</div></div>
+        <div class="result-cell"><div class="result-cell-label">怪物擊敗</div><div class="result-cell-value">${SAVE.reflex.totalEnemies || 0}</div></div>
+        <div class="result-cell"><div class="result-cell-label">完美局</div><div class="result-cell-value">${SAVE.reflex.perfectRuns}</div></div>
       </div>
     </div>
     <div class="stats-section">
@@ -923,7 +843,7 @@ function resetSave() {
 }
 
 // ============================================================
-// VFX HELPERS
+// VFX
 // ============================================================
 function emitParticles(type, count) {
   const layer = document.getElementById('vfx-layer');
@@ -950,190 +870,221 @@ function flashScreen(type) {
   document.body.appendChild(f);
   setTimeout(() => f.remove(), 400);
 }
+function spawnDamageFloat(targetEl, text, color) {
+  const f = document.createElement('div');
+  f.className = 'damage-float';
+  f.textContent = text;
+  f.style.color = color;
+  f.style.left = '50%';
+  f.style.top = '50%';
+  f.style.transform = 'translateX(-50%)';
+  targetEl.appendChild(f);
+  setTimeout(() => f.remove(), 1000);
+}
 
 // ============================================================
-// SCREEN MANAGEMENT
+// STAGES — 4 levels of adventure
+// ============================================================
+const STAGES = [
+  {
+    id: 1, name: '密碼森林', subtitle: '從森林開始你的冒險',
+    bgClass: 'stage-1', enemyEmoji: '🟢', enemyName: 'Slime',
+    ciphers: ['Morse'], length: 1, promptsPerStage: 12, maxT: 6.0,
+    sceneryHTML: () => `<svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="50,200 100,80 150,200" fill="#0a3a2e" opacity="0.6"/>
+      <polygon points="100,200 180,40 260,200" fill="#1a4a3e" opacity="0.7"/>
+      <polygon points="220,200 280,90 340,200" fill="#0a3a2e" opacity="0.5"/>
+      <polygon points="450,200 520,30 590,200" fill="#1a4a3e" opacity="0.7"/>
+      <polygon points="600,200 680,70 760,200" fill="#0a3a2e" opacity="0.6"/>
+    </svg>`,
+  },
+  {
+    id: 2, name: '密碼洞窟', subtitle: '深入黑暗的洞窟',
+    bgClass: 'stage-2', enemyEmoji: '🕷️', enemyName: '蜘蛛',
+    ciphers: ['Morse','Pigpen'], length: 1, promptsPerStage: 14, maxT: 5.5,
+    sceneryHTML: () => `<svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="100,200 110,120 120,200" fill="#1a1a2e"/>
+      <polygon points="180,200 195,100 210,200" fill="#2a2a3e"/>
+      <polygon points="280,200 290,130 300,200" fill="#1a1a2e"/>
+      <polygon points="380,200 395,90 410,200" fill="#2a2a3e"/>
+      <polygon points="500,200 510,140 520,200" fill="#1a1a2e"/>
+      <polygon points="650,200 665,110 680,200" fill="#2a2a3e"/>
+      <circle cx="200" cy="110" r="3" fill="#ffcc00" opacity="0.6">
+        <animate attributeName="opacity" values="0.3;0.8;0.3" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="500" cy="140" r="3" fill="#00d2ff" opacity="0.6">
+        <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.5s" repeatCount="indefinite"/>
+      </circle>
+    </svg>`,
+  },
+  {
+    id: 3, name: '密碼高塔', subtitle: '攀爬魔法高塔',
+    bgClass: 'stage-3', enemyEmoji: '🦇', enemyName: '蝙蝠',
+    ciphers: ['Morse','Pigpen','Grid'], length: 2, promptsPerStage: 16, maxT: 5.0,
+    sceneryHTML: () => `<svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <rect x="100" y="80" width="40" height="120" fill="#1a1a3e" stroke="#3a3a5e" stroke-width="2"/>
+      <rect x="105" y="100" width="12" height="12" fill="#ffcc00" opacity="0.7"/>
+      <rect x="123" y="100" width="12" height="12" fill="#ffcc00" opacity="0.7"/>
+      <rect x="105" y="130" width="12" height="12" fill="#00d2ff" opacity="0.7"/>
+      <rect x="123" y="130" width="12" height="12" fill="#00d2ff" opacity="0.7"/>
+      <rect x="280" y="60" width="40" height="140" fill="#2a1a4e" stroke="#3a3a5e" stroke-width="2"/>
+      <rect x="285" y="80" width="12" height="12" fill="#cc66ff" opacity="0.7"/>
+      <rect x="303" y="80" width="12" height="12" fill="#cc66ff" opacity="0.7"/>
+      <rect x="285" y="110" width="12" height="12" fill="#ffcc00" opacity="0.7"/>
+      <rect x="303" y="110" width="12" height="12" fill="#ffcc00" opacity="0.7"/>
+      <rect x="460" y="90" width="40" height="110" fill="#1a1a3e" stroke="#3a3a5e" stroke-width="2"/>
+      <rect x="465" y="110" width="12" height="12" fill="#00d2ff" opacity="0.7"/>
+      <rect x="483" y="110" width="12" height="12" fill="#00d2ff" opacity="0.7"/>
+      <rect x="640" y="70" width="40" height="130" fill="#2a1a4e" stroke="#3a3a5e" stroke-width="2"/>
+      <rect x="645" y="90" width="12" height="12" fill="#ff3d57" opacity="0.7"/>
+      <rect x="663" y="90" width="12" height="12" fill="#ff3d57" opacity="0.7"/>
+    </svg>`,
+  },
+  {
+    id: 4, name: '龍之巢穴', subtitle: '面對最終 Boss',
+    bgClass: 'stage-4', enemyEmoji: '🐉', enemyName: '龍',
+    ciphers: ['Morse','Pigpen','Grid','Braille'], length: 2, promptsPerStage: 20, maxT: 4.5, isBoss: true,
+    sceneryHTML: () => `<svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="100,200 130,160 160,200" fill="#7a2a1a" opacity="0.7"/>
+      <polygon points="180,200 220,140 260,200" fill="#aa3a1a" opacity="0.8"/>
+      <polygon points="320,200 380,120 440,200" fill="#7a2a1a" opacity="0.7"/>
+      <polygon points="540,200 580,150 620,200" fill="#aa3a1a" opacity="0.8"/>
+      <polygon points="660,200 700,140 740,200" fill="#7a2a1a" opacity="0.7"/>
+      <ellipse cx="400" cy="190" rx="200" ry="15" fill="#ff9100" opacity="0.4">
+        <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2s" repeatCount="indefinite"/>
+      </ellipse>
+      <circle cx="280" cy="170" r="4" fill="#ffcc00">
+        <animate attributeName="opacity" values="0.5;1;0.5" dur="1s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="500" cy="165" r="4" fill="#ffcc00">
+        <animate attributeName="opacity" values="0.5;1;0.5" dur="1.3s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="380" cy="180" r="3" fill="#ffcc00">
+        <animate attributeName="opacity" values="0.5;1;0.5" dur="0.8s" repeatCount="indefinite"/>
+      </circle>
+    </svg>`,
+  },
+];
+
+// ============================================================
+// ADVENTURE STATE
+// ============================================================
+const ADV = {
+  stage: 0,
+  promptInStage: 0,
+  score: 0,
+  combo: 0,
+  bestCombo: 0,
+  lives: 3,
+  totalEnemies: 0,
+  defeated: 0,
+  perfectRun: true,
+  stageStartScore: 0,
+  currentPrompt: null,
+  promptStartTime: 0,
+  barTimer: null,
+  weakLetters: {},
+  awaitingNext: false,
+};
+
+// ============================================================
+// SCREEN MGMT
 // ============================================================
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(name).classList.add('active');
   window.scrollTo(0, 0);
 }
-function enterReflex() {
+
+// ============================================================
+// ENTRY POINTS
+// ============================================================
+function enterAdventure() {
   Audio.uiClick();
-  setupReflexSettings();
-  showScreen('reflex');
-  showReflexSubScreen('setup');
+  ADV.stage = 0;
+  ADV.score = 0;
+  ADV.combo = 0;
+  ADV.bestCombo = 0;
+  ADV.lives = 3;
+  ADV.totalEnemies = 0;
+  ADV.perfectRun = true;
+  ADV.weakLetters = {};
+  document.getElementById('adv-complete').classList.add('hidden');
+  document.getElementById('adv-play').classList.remove('hidden');
+  showStageIntro();
+  showScreen('adventure');
 }
-function exitReflex() {
+
+function exitAdventure() {
   Audio.uiClick();
-  if (reflexState.barTimer) clearInterval(reflexState.barTimer);
+  if (ADV.barTimer) clearInterval(ADV.barTimer);
+  document.getElementById('stage-intro').classList.remove('active');
   showScreen('landing');
 }
 
 // ============================================================
-// REFLEX DRILL — THE ONE FULL GAME
+// STAGE INTRO
 // ============================================================
-const reflexState = {
-  ciphers: ['Morse','Semaphore','Pigpen','Grid','PhoneT9','Braille'],
-  length: 2,
-  numPrompts: 20,
-  mistakeWeight: true,
-  minT: 0.8,
-  maxT: 8.0,
-  score: 0,
-  combo: 0,
-  bestCombo: 0,
-  currentPrompt: null,
-  promptIdx: 0,
-  promptStartTime: 0,
-  barTimer: null,
-  answers: [],
-  weakLetters: {},
-};
-
-function setupReflexSettings() {
-  const row = document.getElementById('reflex-cipher-chips');
-  row.innerHTML = '';
-  CIPHERS.forEach(c => {
-    const chip = document.createElement('div');
-    chip.className = 'chip' + (reflexState.ciphers.includes(c) ? ' active' : '');
-    chip.textContent = c === 'PhoneT9' ? 'Phone T9' : c;
-    chip.onclick = () => {
-      if (reflexState.ciphers.includes(c)) {
-        reflexState.ciphers = reflexState.ciphers.filter(x => x !== c);
-        chip.classList.remove('active');
-      } else {
-        reflexState.ciphers.push(c);
-        chip.classList.add('active');
-      }
-    };
-    row.appendChild(chip);
-  });
-  document.getElementById('reflex-total').textContent = reflexState.numPrompts;
-  updateReflexTiming();
-  updateWeakList();
+function showStageIntro() {
+  const stage = STAGES[ADV.stage];
+  document.body.className = stage.bgClass;
+  document.getElementById('stage-intro-tag').textContent = `// STAGE ${stage.id} / ${STAGES.length} //`;
+  document.getElementById('stage-intro-title').textContent = stage.name;
+  document.getElementById('stage-intro-sub').textContent = stage.subtitle;
+  const enemyEl = document.getElementById('stage-intro-enemy');
+  enemyEl.textContent = stage.enemyEmoji;
+  enemyEl.classList.remove('entrance');
+  void enemyEl.offsetWidth;
+  enemyEl.classList.add('entrance');
+  document.getElementById('stage-intro').classList.add('active');
+  Audio.fanfare();
 }
 
-function setReflexLen(el, n) {
-  reflexState.length = n;
-  el.parentNode.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-}
-function setReflexN(el, n) {
-  reflexState.numPrompts = n;
-  el.parentNode.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('reflex-total').textContent = n;
-}
-function setReflexWeight(el, w) {
-  reflexState.mistakeWeight = !!w;
-  el.parentNode.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-}
-function updateReflexTiming() {
-  reflexState.minT = parseFloat(document.getElementById('reflex-minT').value);
-  reflexState.maxT = parseFloat(document.getElementById('reflex-maxT').value);
-  document.getElementById('reflex-minT-val').textContent = reflexState.minT.toFixed(1) + 's';
-  document.getElementById('reflex-maxT-val').textContent = reflexState.maxT.toFixed(1) + 's';
-}
-
-function showReflexSubScreen(sub) {
-  ['setup','play','end'].forEach(s => {
-    document.getElementById('reflex-' + s).classList.toggle('hidden', s !== sub);
-  });
-}
-
-function startReflex() {
-  if (reflexState.ciphers.length === 0) { alert('至少選一個密碼。'); return; }
+function startStage() {
   Audio.uiClick();
-  reflexState.score = 0;
-  reflexState.combo = 0;
-  reflexState.bestCombo = 0;
-  reflexState.promptIdx = 0;
-  reflexState.answers = [];
-  reflexState.weakLetters = {};
-  document.getElementById('reflex-score').textContent = '0';
-  document.getElementById('reflex-combo').textContent = '0';
-  document.getElementById('reflex-best').textContent = '0';
-  document.getElementById('reflex-progress').textContent = '1';
-  document.getElementById('reflex-total').textContent = reflexState.numPrompts;
-  showReflexSubScreen('play');
-  updateWeakList();
-  nextReflexPrompt();
+  document.getElementById('stage-intro').classList.remove('active');
+  setupStage();
+  ADV.stageStartScore = ADV.score;
+  ADV.promptInStage = 0;
+  ADV.awaitingNext = false;
+  spawnEnemy();
+  nextPrompt();
 }
 
-function getWeakLetters() {
-  const all = [];
-  Object.entries(reflexState.weakLetters).forEach(([letter, count]) => {
-    if (count >= 2) all.push({ letter, weight: count });
-  });
-  return all;
+// ============================================================
+// SETUP STAGE
+// ============================================================
+function setupStage() {
+  const stage = STAGES[ADV.stage];
+  document.getElementById('adv-stage-name').textContent =
+    `⚔️ Stage ${stage.id}: ${stage.name}`;
+  document.getElementById('adv-stage-badge').textContent = `Stage ${stage.id}/${STAGES.length}`;
+  document.getElementById('stage-scenery').innerHTML = stage.sceneryHTML();
+  // Update HUD
+  updateAdvHUD();
 }
 
-function buildTarget(length, weakList) {
-  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    if (reflexState.mistakeWeight && weakList.length > 0 && Math.random() < 0.6) {
-      result += weakList[Math.floor(Math.random() * weakList.length)].letter;
-    } else {
-      result += alpha[Math.floor(Math.random() * 26)];
-    }
-  }
-  return result;
+function updateAdvHUD() {
+  document.getElementById('adv-score').textContent = ADV.score.toLocaleString();
+  document.getElementById('adv-combo').textContent = ADV.combo;
+  document.getElementById('adv-defeated').textContent = ADV.defeated;
+  const hearts = '♥'.repeat(Math.max(0, ADV.lives)) + '<span style="opacity:0.2">♥</span>'.repeat(Math.max(0, 3 - ADV.lives));
+  document.getElementById('adv-lives').innerHTML = hearts;
+  const multEl = document.getElementById('adv-mult');
+  multEl.textContent = '×' + comboMultiplier(ADV.combo).toFixed(1);
 }
 
-function nextReflexPrompt() {
-  if (reflexState.promptIdx >= reflexState.numPrompts) { endReflex(); return; }
-  if (reflexState.ciphers.length === 0) { endReflex(); return; }
-
-  const cipher = reflexState.ciphers[Math.floor(Math.random() * reflexState.ciphers.length)];
-  const weak = getWeakLetters();
-  const target = buildTarget(reflexState.length, weak);
-  const encoded = encodeToCipher(target, cipher);
-  reflexState.currentPrompt = { cipher, target, encoded };
-  reflexState.promptStartTime = performance.now();
-
-  document.getElementById('reflex-cipher-label').textContent =
-    (cipher === 'PhoneT9' ? 'PHONE T9' : cipher.toUpperCase());
-  const promptEl = document.getElementById('reflex-prompt');
-  promptEl.className = 'prompt-content ' + (reflexState.length === 1 ? 'size-xl' : 'size-l');
-  renderCipherPrompt(promptEl, encoded, cipher);
-  document.getElementById('reflex-frame').classList.remove('correct','wrong');
-  document.getElementById('reflex-input').value = '';
-  document.getElementById('reflex-input').focus();
-  document.getElementById('reflex-progress').textContent = (reflexState.promptIdx + 1);
-
-  startReflexBar();
+function spawnEnemy() {
+  const stage = STAGES[ADV.stage];
+  const enemyEl = document.getElementById('enemy');
+  enemyEl.innerHTML = `<div style="font-size: 80px; line-height: 1; filter: drop-shadow(0 0 16px var(--stage-primary)); transition: transform 0.3s;">${stage.enemyEmoji}</div>`;
+  // Position the enemy
+  enemyEl.style.bottom = '60px';
+  enemyEl.style.right = '-100px';
+  enemyEl.classList.remove('entering', 'hit', 'dying');
+  // Animate in
+  setTimeout(() => enemyEl.classList.add('entering'), 50);
 }
-
-function startReflexBar() {
-  clearInterval(reflexState.barTimer);
-  const bar = document.getElementById('reflex-bar');
-  const start = performance.now();
-  reflexState.barTimer = setInterval(() => {
-    const elapsed = (performance.now() - start) / 1000;
-    const remaining = Math.max(0, reflexState.maxT - elapsed);
-    bar.style.width = (remaining / reflexState.maxT * 100) + '%';
-    if (remaining <= 0) {
-      clearInterval(reflexState.barTimer);
-      handleReflexResult(false, reflexState.maxT * 1000);
-    }
-  }, 50);
-}
-
-function submitReflex() {
-  if (!reflexState.currentPrompt) return;
-  clearInterval(reflexState.barTimer);
-  const elapsed = performance.now() - reflexState.promptStartTime;
-  const input = document.getElementById('reflex-input').value.toUpperCase().replace(/\s+/g, '').trim();
-  handleReflexResult(input === reflexState.currentPrompt.target, elapsed);
-}
-
-document.getElementById('reflex-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') submitReflex();
-});
 
 function comboMultiplier(combo) {
   if (combo >= 15) return 4.0;
@@ -1143,34 +1094,155 @@ function comboMultiplier(combo) {
   return 1.0;
 }
 
-function handleReflexResult(correct, elapsedMs) {
-  const { cipher, target } = reflexState.currentPrompt;
-  const inWindow = elapsedMs >= reflexState.minT * 1000;
+// ============================================================
+// PROMPT Generation
+// ============================================================
+function getWeakLetters() {
+  const all = [];
+  Object.entries(ADV.weakLetters).forEach(([letter, count]) => {
+    if (count >= 2) all.push({ letter, weight: count });
+  });
+  return all;
+}
+
+function buildTarget(length, weakList) {
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    if (weakList.length > 0 && Math.random() < 0.6) {
+      result += weakList[Math.floor(Math.random() * weakList.length)].letter;
+    } else {
+      result += alpha[Math.floor(Math.random() * 26)];
+    }
+  }
+  return result;
+}
+
+function nextPrompt() {
+  const stage = STAGES[ADV.stage];
+  if (ADV.lives <= 0) {
+    // Lose - end adventure
+    endAdventure('lose');
+    return;
+  }
+  if (ADV.promptInStage >= stage.promptsPerStage) {
+    // Stage complete!
+    advanceStage();
+    return;
+  }
+
+  const cipher = stage.ciphers[Math.floor(Math.random() * stage.ciphers.length)];
+  const weak = getWeakLetters();
+  const target = buildTarget(stage.length, weak);
+  const encoded = encodeToCipher(target, cipher);
+  ADV.currentPrompt = { cipher, target, encoded };
+  ADV.promptStartTime = performance.now();
+
+  document.getElementById('adv-cipher-label').textContent = cipher.toUpperCase();
+  const promptEl = document.getElementById('adv-prompt');
+  promptEl.className = 'prompt-content ' + (stage.length === 1 ? 'size-xl' : 'size-l');
+  renderCipherPrompt(promptEl, encoded, cipher);
+  document.getElementById('adv-frame').classList.remove('correct','wrong');
+  document.getElementById('adv-input').value = '';
+  document.getElementById('adv-input').focus();
+  startBar(stage.maxT);
+  updateWeakList();
+}
+
+function startBar(maxT) {
+  clearInterval(ADV.barTimer);
+  const bar = document.getElementById('adv-bar');
+  const start = performance.now();
+  ADV.barTimer = setInterval(() => {
+    const elapsed = (performance.now() - start) / 1000;
+    const remaining = Math.max(0, maxT - elapsed);
+    bar.style.width = (remaining / maxT * 100) + '%';
+    if (remaining <= 0) {
+      clearInterval(ADV.barTimer);
+      handleAnswer(false, maxT * 1000);
+    }
+  }, 50);
+}
+
+function submitAnswer() {
+  if (!ADV.currentPrompt || ADV.awaitingNext) return;
+  clearInterval(ADV.barTimer);
+  const elapsed = performance.now() - ADV.promptStartTime;
+  const input = document.getElementById('adv-input').value.toUpperCase().replace(/\s+/g, '').trim();
+  handleAnswer(input === ADV.currentPrompt.target, elapsed);
+}
+
+document.getElementById('adv-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitAnswer();
+});
+
+function handleAnswer(correct, elapsedMs) {
+  if (ADV.awaitingNext) return;
+  ADV.awaitingNext = true;
+
+  const stage = STAGES[ADV.stage];
+  const minT = 0.6;
+  const inWindow = elapsedMs >= minT * 1000;
+  const target = ADV.currentPrompt.target;
 
   if (!correct) {
-    reflexState.weakLetters[target[0]] = (reflexState.weakLetters[target[0]] || 0) + 1;
-  } else if (correct && !inWindow) {
-    // too fast — no combo growth
+    ADV.weakLetters[target[0]] = (ADV.weakLetters[target[0]] || 0) + 1;
+    ADV.perfectRun = false;
   }
 
   if (correct && inWindow) {
-    reflexState.combo++;
-    reflexState.bestCombo = Math.max(reflexState.bestCombo, reflexState.combo);
-    const mult = comboMultiplier(reflexState.combo);
-    const basePts = [100, 180, 250, 300][Math.min(3, reflexState.length - 1)];
-    reflexState.score += Math.round(basePts * mult);
+    ADV.combo++;
+    ADV.bestCombo = Math.max(ADV.bestCombo, ADV.combo);
+    const mult = comboMultiplier(ADV.combo);
+    const basePts = [100, 180, 250, 300][Math.min(3, stage.length - 1)];
+    ADV.score += Math.round(basePts * mult);
     Audio.correct();
     Audio.bump();
+    // Enemy hit animation
+    const enemyEl = document.getElementById('enemy');
+    enemyEl.classList.remove('entering');
+    enemyEl.classList.add('hit');
+    setTimeout(() => {
+      enemyEl.classList.remove('hit');
+      enemyEl.classList.add('dying');
+      Audio.enemyDie();
+      emitParticles('good', 18);
+      flashScreen('good');
+      // Damage floater
+      const dmg = Math.round(basePts * mult / 4);
+      const f = document.createElement('div');
+      f.className = 'damage-float';
+      f.textContent = '-' + dmg;
+      f.style.color = 'var(--good)';
+      enemyEl.appendChild(f);
+      setTimeout(() => f.remove(), 1000);
+    }, 250);
   } else if (correct && !inWindow) {
     Audio.uiClick();
+    // Too fast — small hit
+    const enemyEl = document.getElementById('enemy');
+    enemyEl.classList.add('hit');
+    setTimeout(() => enemyEl.classList.remove('hit'), 400);
   } else {
-    reflexState.combo = 0;
+    ADV.combo = 0;
+    ADV.lives--;
     Audio.wrong();
+    Audio.hurt();
+    const enemyEl = document.getElementById('enemy');
+    enemyEl.classList.remove('entering');
+    enemyEl.classList.add('hit');
+    setTimeout(() => enemyEl.classList.remove('hit'), 400);
+    emitParticles('bad', 12);
+    flashScreen('bad');
+    // Character hurt
+    const charEl = document.getElementById('character');
+    charEl.classList.add('hurt');
+    setTimeout(() => charEl.classList.remove('hurt'), 400);
   }
 
   // Update UI
-  const comboEl = document.getElementById('reflex-combo');
-  comboEl.textContent = reflexState.combo;
+  const comboEl = document.getElementById('adv-combo');
+  comboEl.textContent = ADV.combo;
   if (correct && inWindow) {
     comboEl.classList.remove('shatter'); comboEl.classList.add('bounce');
     setTimeout(() => comboEl.classList.remove('bounce'), 400);
@@ -1178,97 +1250,131 @@ function handleReflexResult(correct, elapsedMs) {
     comboEl.classList.remove('bounce'); comboEl.classList.add('shatter');
     setTimeout(() => comboEl.classList.remove('shatter'), 500);
   }
-  document.getElementById('reflex-best').textContent = reflexState.bestCombo;
-  document.getElementById('reflex-score').textContent = reflexState.score.toLocaleString();
 
-  const multEl = document.getElementById('reflex-mult');
-  multEl.textContent = '×' + comboMultiplier(reflexState.combo).toFixed(1);
+  const multEl = document.getElementById('adv-mult');
+  multEl.textContent = '×' + comboMultiplier(ADV.combo).toFixed(1);
   multEl.classList.remove('bump');
   if (correct && inWindow) {
     multEl.classList.add('bump');
     setTimeout(() => multEl.classList.remove('bump'), 300);
   }
 
-  const frame = document.getElementById('reflex-frame');
+  const frame = document.getElementById('adv-frame');
   frame.classList.remove('correct','wrong');
+  if (correct && inWindow) frame.classList.add('correct');
+  else if (!correct) frame.classList.add('wrong');
+
   if (correct && inWindow) {
-    frame.classList.add('correct');
-    emitParticles('good', 16);
-  } else if (!correct) {
-    frame.classList.add('wrong');
-    emitParticles('bad', 12);
-    flashScreen('bad');
+    // Character jumps
+    const charEl = document.getElementById('character');
+    charEl.classList.add('jump');
+    setTimeout(() => charEl.classList.remove('jump'), 500);
   }
 
-  reflexState.answers.push({ target, cipher, correct, inWindow, elapsedMs });
-  reflexState.promptIdx++;
-  updateWeakList();
+  updateAdvHUD();
 
   setTimeout(() => {
     frame.classList.remove('correct','wrong');
-    nextReflexPrompt();
+    ADV.promptInStage++;
+    if (correct && inWindow) ADV.defeated++;
+    ADV.totalEnemies++;
+    // Spawn new enemy (visual)
+    spawnEnemy();
+    // Next prompt after a brief delay
+    setTimeout(() => {
+      ADV.awaitingNext = false;
+      nextPrompt();
+    }, 350);
   }, 380);
 }
 
 function updateWeakList() {
-  const el = document.getElementById('reflex-weak-list');
+  const el = document.getElementById('adv-weak-list');
   const weak = getWeakLetters();
   if (weak.length === 0) {
-    el.innerHTML = '<span class="text-dim" style="font-size: 12px;">無弱點字母</span>';
+    el.innerHTML = '<span class="text-dim" style="font-size: 12px;">擊敗更多怪物來發現弱點</span>';
     return;
   }
   const sorted = weak.sort((a, b) => b.weight - a.weight).slice(0, 8);
   el.innerHTML = sorted.map(w => `<span class="weak-letter">${w.letter}<small>×${w.weight}</small></span>`).join('');
 }
 
-function endReflex() {
-  clearInterval(reflexState.barTimer);
-  showReflexSubScreen('end');
+function advanceStage() {
+  Audio.fanfare();
+  emitParticles('gold', 24);
+  flashScreen('good');
+  ADV.stage++;
+  if (ADV.stage >= STAGES.length) {
+    endAdventure('win');
+    return;
+  }
+  // Brief transition, then show next stage intro
+  setTimeout(() => {
+    showStageIntro();
+    document.getElementById('adv-play').classList.add('hidden');
+    document.getElementById('stage-intro').classList.add('active');
+  }, 1500);
+}
 
-  const total = reflexState.answers.length;
-  const correct = reflexState.answers.filter(a => a.correct && a.inWindow).length;
-  const acc = total > 0 ? Math.round((correct / total) * 100) : 0;
-  const avgMs = total > 0 ? reflexState.answers.reduce((s, a) => s + a.elapsedMs, 0) / total : 0;
+function endAdventure(result) {
+  clearInterval(ADV.barTimer);
+  document.getElementById('adv-play').classList.add('hidden');
+  const complete = document.getElementById('adv-complete');
+  complete.classList.remove('hidden');
 
-  document.getElementById('reflex-end-score').textContent = reflexState.score.toLocaleString();
-  document.getElementById('reflex-end-acc').textContent = acc + '%';
-  document.getElementById('reflex-end-best').textContent = reflexState.bestCombo;
-  document.getElementById('reflex-end-avg').textContent = (avgMs / 1000).toFixed(1) + 's';
+  if (result === 'win') {
+    Audio.fanfare();
+    recordAchievement('journey_done', '旅程完成');
+    if (ADV.perfectRun && ADV.lives === 3) recordAchievement('flawless_run', '無傷旅程');
+    complete.querySelector('h2').textContent = '🏆 旅程完成';
+    complete.querySelector('p').textContent = '你擊敗了所有怪物,從密碼森林走到了龍之巢穴。';
+  } else {
+    Audio.wrong();
+    complete.querySelector('h2').textContent = '💀 旅程失敗';
+    complete.querySelector('p').textContent = '你被打敗了。再接再厲!';
+  }
 
-  // Aggregate weakest
+  // Stats
+  const statsHTML = `
+    <div class="result-cell"><div class="result-cell-label">總分數</div><div class="result-cell-value text-good">${ADV.score.toLocaleString()}</div></div>
+    <div class="result-cell"><div class="result-cell-label">最佳連擊</div><div class="result-cell-value text-gold">${ADV.bestCombo}</div></div>
+    <div class="result-cell"><div class="result-cell-label">擊敗怪物</div><div class="result-cell-value">${ADV.defeated}</div></div>
+    <div class="result-cell"><div class="result-cell-label">關卡</div><div class="result-cell-value text-good">${result === 'win' ? '4 / 4' : ADV.stage + ' / 4'}</div></div>
+  `;
+  document.getElementById('adv-complete-stats').innerHTML = statsHTML;
+
+  // Weak letters
   const wc = {};
-  reflexState.answers.filter(a => !a.correct).forEach(a => {
-    a.target.split('').forEach(l => { wc[l] = (wc[l] || 0) + 1; });
-  });
-  const sorted = Object.entries(wc).sort((a, b) => b[1] - a[1]).slice(0, 6);
-  document.getElementById('reflex-end-weak').innerHTML = sorted.length === 0
-    ? '<span class="text-dim" style="font-size: 12px;">零失誤,完美一輪!</span>'
+  Object.entries(ADV.weakLetters).forEach(([l, c]) => { wc[l] = c; });
+  const sorted = Object.entries(wc).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  document.getElementById('adv-complete-weak').innerHTML = sorted.length === 0
+    ? '<span class="text-dim" style="font-size: 12px;">無弱點,完美!</span>'
     : sorted.map(([l, c]) => `<span class="weak-letter">${l}<small>×${c}</small></span>`).join('');
 
-  // Save stats
+  // Save
   SAVE.reflex.totalRuns++;
-  if (acc === 100) {
-    SAVE.reflex.perfectRuns++;
-    recordAchievement('perfect_run', '完美一輪');
+  if (ADV.score > SAVE.reflex.bestScore) SAVE.reflex.bestScore = ADV.score;
+  if (ADV.bestCombo > SAVE.reflex.bestCombo) SAVE.reflex.bestCombo = ADV.bestCombo;
+  if (ADV.perfectRun) SAVE.reflex.perfectRuns++;
+  if (result === 'win') {
+    SAVE.reflex.stagesCleared = Math.max(SAVE.reflex.stagesCleared || 0, STAGES.length);
+  } else {
+    SAVE.reflex.stagesCleared = Math.max(SAVE.reflex.stagesCleared || 0, ADV.stage);
   }
-  if (reflexState.score > SAVE.reflex.bestScore) SAVE.reflex.bestScore = reflexState.score;
-  if (reflexState.bestCombo > SAVE.reflex.bestCombo) SAVE.reflex.bestCombo = reflexState.bestCombo;
+  SAVE.reflex.totalEnemies = (SAVE.reflex.totalEnemies || 0) + ADV.totalEnemies;
   SAVE.lastPlayed = Date.now();
   recordAchievement('first_run', '首次遊玩');
-  if (reflexState.bestCombo >= 10) recordAchievement('combo_10', 'Combo ×10');
-  if (reflexState.bestCombo >= 15) recordAchievement('combo_15', 'Combo ×15');
+  if (ADV.bestCombo >= 10) recordAchievement('combo_10', 'Combo ×10');
+  if (ADV.bestCombo >= 15) recordAchievement('combo_15', 'Combo ×15');
   commitSave();
-  Audio.reveal();
 }
 
 // ============================================================
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  // Set initial sound toggle state
   const btn = document.getElementById('sound-toggle');
   if (btn) btn.textContent = Audio.enabled ? '🔊 音效:開' : '🔇 音效:關';
-  // Focus input for fast typing when game starts
 });
 </script>
 </body>
