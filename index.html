@@ -420,16 +420,34 @@ body.stage-4 { --stage-primary: #ff3d57; --stage-secondary: #aa3a1a; }
     <div class="landing-subtitle">
       解碼密碼 · 鍛鍊反射 · 破解訊息
     </div>
-    <div class="landing-tag-2">▶ 4 個關卡 · 遇到怪物 · 擊敗最終 Boss</div>
+    <div class="landing-tag-2">▶ 4 個關卡 · 怪物會主動攻擊 · 答對擊退 · 挑戰最終 Boss</div>
     <div class="landing-actions">
-      <div class="landing-mode-card" onclick="enterAdventure()">
-        <div class="landing-mode-icon">⚔️</div>
-        <div class="landing-mode-title">冒險旅程</div>
+      <div class="landing-mode-card" onclick="enterAdventure('easy')">
+        <div class="landing-mode-icon">🐢</div>
+        <div class="landing-mode-title">慢速 · 休閒</div>
         <div class="landing-mode-desc">
-          從密碼森林開始,穿越洞窟、高塔,挑戰最終 Boss。<br>
-          答對擊敗怪物 · Combo 越高傷害越大 · 弱點字母自動學習
+          怪物慢行 · 8 秒解碼時間 · 8 題/關<br>
+          適合新手 · 熟悉密碼 · 不趕時間
         </div>
-        <span class="landing-mode-meta">4 關 · 6 種密碼 · 全程存檔</span>
+        <span class="landing-mode-meta" style="background:var(--good);">EASY</span>
+      </div>
+      <div class="landing-mode-card" onclick="enterAdventure('normal')">
+        <div class="landing-mode-icon">⚔️</div>
+        <div class="landing-mode-title">普通 · 標準</div>
+        <div class="landing-mode-desc">
+          怪物快步 · 5 秒解碼時間 · 12 題/關<br>
+          平衡挑戰 · Combo 練反射 · 有壓力但不極端
+        </div>
+        <span class="landing-mode-meta" style="background:var(--accent);">NORMAL</span>
+      </div>
+      <div class="landing-mode-card" onclick="enterAdventure('hard')">
+        <div class="landing-mode-icon">🔥</div>
+        <div class="landing-mode-title">快速 · 緊張</div>
+        <div class="landing-mode-desc">
+          怪物衝鋒 · 3 秒解碼時間 · 16 題/關<br>
+          高壓訓練 · 反應速度 · 接近真實對戰節奏
+        </div>
+        <span class="landing-mode-meta" style="background:var(--bad);">HARD</span>
       </div>
     </div>
     <div class="landing-extras mt-6">
@@ -569,7 +587,19 @@ body.stage-4 { --stage-primary: #ff3d57; --stage-secondary: #aa3a1a; }
     </div>
   </div>
 
-  <!-- GAME COMPLETE (after stage 4) -->
+  <!-- STAGE COMPLETE INTERMEDIATE SCREEN -->
+<div id="stage-complete" class="stage-intro">
+  <div class="stage-intro-card" style="border-color: var(--gold);">
+    <div class="stage-intro-tag" id="stage-complete-tag" style="color: var(--gold);">// STAGE X COMPLETE //</div>
+    <div class="stage-intro-enemy" style="font-size: 60px;">🏆</div>
+    <div class="stage-intro-title" id="stage-complete-name">關卡通過</div>
+    <div class="stage-intro-sub">準備好進入下一個關卡了嗎?</div>
+    <div class="result-grid" id="stage-complete-stats" style="margin-bottom: 24px;"></div>
+    <button class="btn btn-primary btn-big" onclick="continueToNextStage()">▶ 繼續冒險</button>
+  </div>
+</div>
+
+<!-- GAME COMPLETE (after stage 4) -->
   <div id="adv-complete" class="reveal-wrap hidden">
     <h2 style="font-size: 36px; font-weight: 900; margin-bottom: 8px; background: linear-gradient(120deg, #00e676, #ffcc00, #00d2ff); -webkit-background-clip: text; background-clip: text; color: transparent;">🏆 旅程完成</h2>
     <p class="text-dim mb-4">你擊敗了所有怪物,從密碼森林走到了龍之巢穴。</p>
@@ -883,6 +913,17 @@ function spawnDamageFloat(targetEl, text, color) {
 }
 
 // ============================================================
+// SPEED CONFIG
+// ============================================================
+const SPEEDS = {
+  easy:   { maxT: 8.0, promptsPerStage: 8,  label: '慢速', color: 'var(--good)' },
+  normal: { maxT: 5.0, promptsPerStage: 12, label: '普通', color: 'var(--accent)' },
+  hard:   { maxT: 3.0, promptsPerStage: 16, label: '快速', color: 'var(--bad)' },
+};
+
+let CURRENT_SPEED = 'normal';
+
+// ============================================================
 // STAGES — 4 levels of adventure
 // ============================================================
 const STAGES = [
@@ -999,8 +1040,10 @@ function showScreen(name) {
 // ============================================================
 // ENTRY POINTS
 // ============================================================
-function enterAdventure() {
+function enterAdventure(speed) {
   Audio.uiClick();
+  CURRENT_SPEED = speed || 'normal';
+  const sp = SPEEDS[CURRENT_SPEED];
   ADV.stage = 0;
   ADV.score = 0;
   ADV.combo = 0;
@@ -1009,7 +1052,11 @@ function enterAdventure() {
   ADV.totalEnemies = 0;
   ADV.perfectRun = true;
   ADV.weakLetters = {};
+  ADV.currentPrompt = null;
+  ADV.enemyMaxT = sp.maxT;
+  ADV.promptsPerStage = sp.promptsPerStage;
   document.getElementById('adv-complete').classList.add('hidden');
+  document.getElementById('stage-complete').classList.remove('active');
   document.getElementById('adv-play').classList.remove('hidden');
   showStageIntro();
   showScreen('adventure');
@@ -1159,9 +1206,36 @@ function startBar(maxT) {
     bar.style.width = (remaining / maxT * 100) + '%';
     if (remaining <= 0) {
       clearInterval(ADV.barTimer);
+      // Timeout = enemy reaches you!
       handleAnswer(false, maxT * 1000);
     }
   }, 50);
+}
+
+// Enemy march — moves from right to character position over maxT seconds
+function startEnemyMarch(maxT) {
+  if (ADV.enemyAnimFrame) cancelAnimationFrame(ADV.enemyAnimFrame);
+  const enemyEl = document.getElementById('enemy');
+  enemyEl.style.right = '-100px';
+  enemyEl.classList.remove('entering', 'hit', 'dying', 'attacking');
+  enemyEl.style.opacity = '1';
+  enemyEl.style.transform = 'scale(1)';
+
+  function march() {
+    if (!ADV.currentPrompt) return;
+    const elapsed = (performance.now() - ADV.enemySpawnTime) / 1000;
+    const ratio = Math.min(1, elapsed / maxT);
+    // Move from -100px (off-screen right) to 100px (where character is at left: 80px)
+    const right = -100 + ratio * 200;
+    enemyEl.style.right = right + 'px';
+    // Slight wobble for personality
+    const wobble = Math.sin(elapsed * 6) * 4 * (1 - ratio * 0.5);
+    enemyEl.style.transform = `translateY(${wobble}px)`;
+    if (ratio < 1) {
+      ADV.enemyAnimFrame = requestAnimationFrame(march);
+    }
+  }
+  ADV.enemyAnimFrame = requestAnimationFrame(march);
 }
 
 function submitAnswer() {
@@ -1308,12 +1382,33 @@ function advanceStage() {
     endAdventure('win');
     return;
   }
-  // Brief transition, then show next stage intro
-  setTimeout(() => {
-    showStageIntro();
-    document.getElementById('adv-play').classList.add('hidden');
-    document.getElementById('stage-intro').classList.add('active');
-  }, 1500);
+  // Clear current prompt so user input doesn't accidentally match stale prompt
+  ADV.currentPrompt = null;
+  // Show "Stage Complete!" overlay with explicit Continue button
+  showStageComplete();
+}
+
+function showStageComplete() {
+  // Hide play area, show stage-complete card
+  document.getElementById('adv-play').classList.add('hidden');
+  const card = document.getElementById('stage-complete');
+  card.classList.add('active');
+  const stageScore = ADV.score - ADV.stageStartScore;
+  const completedStage = ADV.stage - 1;
+  document.getElementById('stage-complete-tag').textContent = `// STAGE ${completedStage} COMPLETE //`;
+  document.getElementById('stage-complete-name').textContent = STAGES[completedStage].name;
+  document.getElementById('stage-complete-stats').innerHTML = `
+    <div class="result-cell"><div class="result-cell-label">本關分數</div><div class="result-cell-value text-good">${stageScore.toLocaleString()}</div></div>
+    <div class="result-cell"><div class="result-cell-label">連擊</div><div class="result-cell-value text-gold">${ADV.bestCombo}</div></div>
+    <div class="result-cell"><div class="result-cell-label">擊敗怪物</div><div class="result-cell-value">${ADV.defeated}</div></div>
+    <div class="result-cell"><div class="result-cell-label">❤ 剩餘生命</div><div class="result-cell-value">${'♥'.repeat(ADV.lives)}</div></div>
+  `;
+}
+
+function continueToNextStage() {
+  Audio.uiClick();
+  document.getElementById('stage-complete').classList.remove('active');
+  showStageIntro();
 }
 
 function endAdventure(result) {
