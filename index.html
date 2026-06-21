@@ -4,6 +4,9 @@
 <meta charset=」utf-8」>
 <meta name=」viewport」 content=」width=device-width, initial-scale=1, viewport-fit=cover」>
 <title>密碼 Lab — Game Feel Prototype</title>
+
+<!-- Phaser 3 (game engine for actual gameplay) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.70.0/phaser.min.js"></script>
 <style>
 /* ============================================================
    TOKENS
@@ -83,60 +86,9 @@ body::after {
 /* ============================================================
    LANDING
 ============================================================ */
-.landing-wrap { max-width: 980px; margin: 0 auto; width: 100%; padding: 40px 0 60px; }
-.landing-header { text-align: center; margin-bottom: 48px; }
-.landing-title {
-  font-size: clamp(36px, 6vw, 64px);
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  background: linear-gradient(120deg, var(--accent) 0%, var(--accent-2) 60%, var(--gold) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  margin-bottom: 12px;
-}
-.landing-subtitle { color: var(--text-dim); font-size: 16px; }
 
-.mode-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-}
-.mode-card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 24px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-.mode-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: var(--mode-accent, var(--accent));
-  opacity: 0.8;
-}
-.mode-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--mode-accent, var(--accent));
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), var(--shadow-glow);
-}
-.mode-icon { font-size: 36px; margin-bottom: 12px; }
-.mode-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
-.mode-desc { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
-.mode-tag {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: var(--mode-accent, var(--accent));
-  color: var(--bg);
-  margin-top: 12px;
-}
+
+
 
 /* ============================================================
    BUTTONS / CHIPS
@@ -1034,6 +986,258 @@ textarea.input-std { font-family: 」SF Mono」, monospace; resize: vertical; mi
 }
 
 /* ============================================================
+   LANDING HERO + MODE CARD PREVIEWS
+============================================================ */
+.landing-hero {
+  position: relative;
+  padding: 60px 0 40px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.landing-title-wrap {
+  position: relative;
+  z-index: 2;
+}
+
+.landing-title {
+  font-size: clamp(48px, 9vw, 96px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  background: linear-gradient(120deg, var(--accent) 0%, var(--accent-2) 50%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(0, 210, 255, 0.4);
+  filter: drop-shadow(0 0 24px rgba(124, 77, 255, 0.5));
+  animation: titlePulse 4s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+  0%, 100% { filter: drop-shadow(0 0 24px rgba(124, 77, 255, 0.5)); }
+  50%      { filter: drop-shadow(0 0 36px rgba(0, 210, 255, 0.7)); }
+}
+
+.landing-tagline {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  animation: taglineFade 6s ease-in-out infinite;
+}
+
+@keyframes taglineFade {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+.landing-subtitle {
+  color: var(--text-dim);
+  font-size: clamp(14px, 2vw, 18px);
+  margin-bottom: 32px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+/* Hero characters (left + right) */
+.hero-characters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 900px;
+  margin: 0 auto 48px;
+  padding: 0 24px;
+  position: relative;
+  z-index: 2;
+}
+.hero-char {
+  width: 140px;
+  height: 180px;
+  filter: drop-shadow(0 0 32px rgba(0, 210, 255, 0.3));
+  animation: heroFloat 4s ease-in-out infinite;
+}
+.hero-char.right {
+  animation-delay: 2s;
+  filter: drop-shadow(0 0 32px rgba(124, 77, 255, 0.3));
+}
+.hero-char.right .char-svg {
+  transform: scaleX(-1);
+}
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+
+.hero-vs {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--bad), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 16px rgba(255, 61, 87, 0.6));
+  animation: vsPulse 2s ease-in-out infinite;
+}
+@keyframes vsPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.15); }
+}
+
+/* Floating cipher symbols (background decoration) */
+.floating-symbols {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+.float-sym {
+  position: absolute;
+  font-family: "SF Mono", monospace;
+  font-weight: 900;
+  opacity: 0.15;
+  animation: floatUp 12s linear infinite;
+}
+@keyframes floatUp {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.15; }
+  90%  { opacity: 0.15; }
+  100% { transform: translateY(-600px) rotate(360deg); opacity: 0; }
+}
+
+/* Twinkling stars overlay */
+.stars-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    radial-gradient(1px 1px at 25px 35px, white, transparent),
+    radial-gradient(1px 1px at 80px 110px, white, transparent),
+    radial-gradient(2px 2px at 180px 60px, var(--gold), transparent),
+    radial-gradient(1px 1px at 280px 180px, white, transparent),
+    radial-gradient(2px 2px at 360px 90px, var(--accent), transparent),
+    radial-gradient(1px 1px at 480px 200px, white, transparent),
+    radial-gradient(1px 1px at 580px 50px, var(--gold), transparent),
+    radial-gradient(1px 1px at 680px 150px, white, transparent),
+    radial-gradient(2px 2px at 780px 110px, var(--accent), transparent),
+    radial-gradient(1px 1px at 880px 220px, white, transparent);
+  background-size: 900px 240px;
+  background-repeat: repeat;
+  animation: twinkle 3s ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 0.9; }
+}
+
+/* CRT scanline overlay */
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 210, 255, 0.025) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.6;
+}
+
+/* Mode card with preview */
+.mode-card {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.mode-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--mode-accent, var(--accent));
+  z-index: 2;
+}
+.mode-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, var(--mode-accent, var(--accent)) 200%);
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  z-index: 0;
+}
+.mode-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: var(--mode-accent, var(--accent));
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5),
+              0 0 32px var(--mode-accent-glow, rgba(0, 210, 255, 0.4));
+}
+.mode-card:hover::after { opacity: 0.08; }
+
+.mode-preview {
+  position: relative;
+  height: 110px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%);
+  border-bottom: 1px solid var(--line);
+  overflow: hidden;
+}
+.mode-preview svg { width: 100%; height: 100%; display: block; }
+.mode-icon-big {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-size: 18px;
+  opacity: 0.4;
+}
+
+.mode-body { padding: 20px 22px 22px; position: relative; z-index: 1; flex: 1; }
+.mode-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  display: inline-block;
+  filter: drop-shadow(0 0 12px var(--mode-accent, var(--accent)));
+}
+.mode-title {
+  font-size: 19px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+.mode-desc {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+.mode-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--mode-accent, var(--accent));
+  color: var(--bg);
+  margin-top: 4px;
+}
+
+/* ============================================================
    LANDING EXTRAS + STATS MODAL
 ============================================================ */
 .landing-extras {
@@ -1099,43 +1303,292 @@ textarea.input-std { font-family: 」SF Mono」, monospace; resize: vertical; mi
 <!-- ============================================================
      LANDING
 ============================================================ -->
-<div id=」landing」 class=」screen active」>
+<div id=」landing」 class=」screen active」 style=」position:relative;overflow:hidden;」>
+  <!-- Background overlays -->
+  <div class=」stars-overlay」></div>
+  <div class=」floating-symbols」>
+    <div class=」float-sym」 style=」left:10%;font-size:48px;color:#00d2ff;animation-delay:0s;」>·</div>
+    <div class=」float-sym」 style=」left:30%;font-size:36px;color:#ffcc00;animation-delay:2s;」>−</div>
+    <div class=」float-sym」 style=」left:55%;font-size:54px;color:#7c4dff;animation-delay:4s;」>⊕</div>
+    <div class=」float-sym」 style=」left:75%;font-size:40px;color:#00d2ff;animation-delay:6s;」>×</div>
+    <div class=」float-sym」 style=」left:88%;font-size:46px;color:#ff3d57;animation-delay:8s;」>⌬</div>
+  </div>
+  <div class=」scanlines」></div>
+
   <div class=」landing-wrap」>
-    <div class=」landing-header」>
-      <div class=」landing-title」>CIPHER LAB</div>
-      <div class=」landing-subtitle」>解碼密碼 · 鍛鍊反射 · 破解訊息</div>
+    <!-- HERO -->
+    <div class=」landing-hero」>
+      <div class=」landing-title-wrap」>
+        <div class=」landing-tagline」>// CIPHER PROTOCOL v0.6 //</div>
+        <div class=」landing-title」>CIPHER LAB</div>
+        <div class=」landing-subtitle」解碼密碼 · 鍛鍊反射 · 破解訊息<br>從 Morse 到 Pigpen,6 種反射密碼 + 5 種遊戲模式</div>
+      </div>
+      <div class=」hero-characters」>
+        <div class=」hero-char」 id=」hero-blue」></div>
+        <div class=」hero-vs」>VS</div>
+        <div class=」hero-char right」 id=」hero-warden」></div>
+      </div>
     </div>
+
+    <!-- MODE CARDS with mini-previews -->
     <div class=」mode-grid」>
-      <div class=」mode-card」 style=」--mode-accent: #00d2ff」 onclick=」Audio.uiClick();enterMode('reflex')」>
-        <div class=」mode-icon」>⚡</div>
-        <div class=」mode-title」>反射訓練</div>
-        <div class=」mode-desc」>隨機單字母題目,加權偏重你常錯的字母,Combo Chain 節奏練習。</div>
-        <div class=」mode-tag」>測驗 · 單人</div>
+
+      <!-- Reflex Drill -->
+      <div class=」mode-card」 style=」--mode-accent: #00d2ff; --mode-accent-glow: rgba(0,210,255,0.4);」 onclick=」Audio.uiClick();enterMode('reflex')」>
+        <div class=」mode-preview」>
+          <svg viewBox=」0 0 240 110」 preserveAspectRatio=」xMidYMid meet」>
+            <defs>
+              <linearGradient id=」pr-reflex-bg」 x1=」0」 y1=」0」 x2=」0」 y2=」1」>
+                <stop offset=」0%」 stop-color=」#0a1a2e」/>
+                <stop offset=」100%」 stop-color=」#0a0e1a」/>
+              </linearGradient>
+              <linearGradient id=」pr-reflex-bar」 x1=」0」 y1=」0」 x2=」1」 y2=」0」>
+                <stop offset=」0%」 stop-color=」#00e676」/>
+                <stop offset=」50%」 stop-color=」#00d2ff」/>
+                <stop offset=」100%」 stop-color=」#ffcc00」/>
+              </linearGradient>
+            </defs>
+            <rect width=」240」 height=」110」 fill=」url(#pr-reflex-bg)」/>
+            <!-- Morse characters streaming -->
+            <text x=」20」 y=」45」 font-family=」SF Mono, monospace」 font-weight=」900」 font-size=」24」 fill=」#ffcc00」 letter-spacing=」2」>.- -... .--</text>
+            <text x=」160」 y=」45」 font-family=」SF Mono, monospace」 font-weight=」900」 font-size=」24」 fill=」#00d2ff」 letter-spacing=」2」>..-</text>
+            <!-- Combo bar -->
+            <rect x=」20」 y=」75」 width=」200」 height=」6」 rx=」3」 fill=」#1a2238」/>
+            <rect x=」20」 y=」75」 width=」140」 height=」6」 rx=」3」 fill=」url(#pr-reflex-bar)」/>
+            <!-- multiplier -->
+            <circle cx=」195」 cy=」78」 r=」8」 fill=」#00d2ff」 stroke=」#0a0e1a」 stroke-width=」2」/>
+            <text x=」195」 y=」81」 text-anchor=」middle」 font-family=」SF Mono」 font-size=」9」 font-weight=」900」 fill=」#0a0e1a」>×2</text>
+            <!-- pulse dots -->
+            <circle cx=」30」 cy=」30」 r=」3」 fill=」#00d2ff」 opacity=」0.6」><animate attributeName=」opacity」 values=」0.3;1;0.3」 dur=」1.5s」 repeatCount=」indefinite」/></circle>
+            <circle cx=」50」 cy=」30」 r=」3」 fill=」#00d2ff」 opacity=」0.6」><animate attributeName=」opacity」 values=」0.3;1;0.3」 dur=」1.5s」 begin=」0.3s」 repeatCount=」indefinite」/></circle>
+            <circle cx=」70」 cy=」30」 r=」3」 fill=」#00d2ff」 opacity=」0.6」><animate attributeName=」opacity」 values=」0.3;1;0.3」 dur=」1.5s」 begin=」0.6s」 repeatCount=」indefinite」/></circle>
+          </svg>
+        </div>
+        <div class=」mode-body」>
+          <div class=」mode-icon」>⚡</div>
+          <div class=」mode-title」>反射訓練</div>
+          <div class=」mode-desc」>隨機單字母題目,加權偏重你常錯的字母,Combo Chain 節奏練習。</div>
+          <div class=」mode-tag」>測驗 · 單人</div>
+        </div>
       </div>
-      <div class=」mode-card」 style=」--mode-accent: #ffcc00」 onclick=」Audio.uiClick();enterMode('story')」>
-        <div class=」mode-icon」>📜</div>
-        <div class=」mode-title」>故事斬件</div>
-        <div class=」mode-desc」>領袖輸入一段文字,你一塊一塊解碼,揭曉整篇訊息。</div>
-        <div class=」mode-tag」>測驗 · 單人 · NARRATIVE</div>
+
+      <!-- Story Chunk -->
+      <div class=」mode-card」 style=」--mode-accent: #ffcc00; --mode-accent-glow: rgba(255,204,0,0.4);」 onclick=」Audio.uiClick();enterMode('story')」>
+        <div class=」mode-preview」>
+          <svg viewBox=」0 0 240 110」 preserveAspectRatio=」xMidYMid meet」>
+            <defs>
+              <linearGradient id=」pr-story-bg」 x1=」0」 y1=」0」 x2=」0」 y2=」1」>
+                <stop offset=」0%」 stop-color=」#1a0a2e」/>
+                <stop offset=」100%」 stop-color=」#2a1a4e」/>
+              </linearGradient>
+            </defs>
+            <rect width=」240」 height=」110」 fill=」url(#pr-story-bg)」/>
+            <!-- Parchment scroll -->
+            <rect x=」30」 y=」20」 width=」180」 height=」70」 fill=」#3a2a5e」 stroke=」#ffcc00」 stroke-width=」1.5」 rx=」2」/>
+            <!-- top rolled edge -->
+            <ellipse cx=」30」 cy=」20」 rx=」5」 ry=」8」 fill=」#ffcc00」/>
+            <ellipse cx=」210」 cy=」20」 rx=」5」 ry=」8」 fill=」#ffcc00」/>
+            <ellipse cx=」30」 cy=」90」 rx=」5」 ry=」8」 fill=」#ffcc00」/>
+            <ellipse cx=」210」 cy=」90」 rx=」5」 ry=」8」 fill=」#ffcc00」/>
+            <!-- Morse on scroll -->
+            <text x=」120」 y=」42」 text-anchor=」middle」 font-family=」SF Mono」 font-size=」11」 font-weight=」900」 fill=」#ffcc00」 letter-spacing=」1」>.... . .-.. .-.. ---</text>
+            <!-- arrow -->
+            <path d=」M 100 50 L 105 55 L 100 60」 stroke=」#00e676」 stroke-width=」2」 fill=」none」/>
+            <!-- decoded -->
+            <text x=」140」 y=」57」 font-family=」SF Mono」 font-size=」13」 font-weight=」900」 fill=」#00d2ff」>HELLO</text>
+            <!-- progress chunk indicator -->
+            <text x=」120」 y=」80」 text-anchor=」middle」 font-family=」SF Mono」 font-size=」9」 font-weight=」700」 fill=」#8a9bc4」>CHUNK 7 / 23</text>
+          </svg>
+        </div>
+        <div class=」mode-body」>
+          <div class=」mode-icon」>📜</div>
+          <div class=」mode-title」>故事斬件</div>
+          <div class=」mode-desc」>領袖輸入一段文字,你一塊一塊解碼,揭曉整篇訊息。</div>
+          <div class=」mode-tag」>測驗 · 單人 · 敘事</div>
+        </div>
       </div>
-      <div class=」mode-card」 style=」--mode-accent: #ff3d57」 onclick=」Audio.uiClick();enterMode('duel')」>
-        <div class=」mode-icon」>⚔️</div>
-        <div class=」mode-title」>一對一對戰</div>
-        <div class=」mode-desc」>兩部手機對戰。HP 條、取消窗口、傷害特效。視覺展示對戰畫面。</div>
-        <div class=」mode-tag」>對戰 · 1v1 · 視覺展示</div>
+
+      <!-- Head-to-Head Duel -->
+      <div class=」mode-card」 style=」--mode-accent: #ff3d57; --mode-accent-glow: rgba(255,61,87,0.4);」 onclick=」Audio.uiClick();enterMode('duel')」>
+        <div class=」mode-preview」>
+          <svg viewBox=」0 0 240 110」 preserveAspectRatio=」xMidYMid meet」>
+            <defs>
+              <linearGradient id=」pr-duel-bg」 x1=」0」 y1=」0」 x2=」0」 y2=」1」>
+                <stop offset=」0%」 stop-color=」#1a0a1e」/>
+                <stop offset=」100%」 stop-color=」#0a0e1a」/>
+              </linearGradient>
+              <linearGradient id=」pr-duel-vs」 x1=」0」 y1=」0」 x2=」1」 y2=」1」>
+                <stop offset=」0%」 stop-color=」#ff3d57」/>
+                <stop offset=」100%」 stop-color=」#7c4dff」/>
+              </linearGradient>
+            </defs>
+            <rect width=」240」 height=」110」 fill=」url(#pr-duel-bg)」/>
+            <!-- Left fighter silhouette -->
+            <g transform=」translate(15, 15)」>
+              <circle cx=」20」 cy=」10」 r=」8」 fill=」none」 stroke=」#00d2ff」 stroke-width=」2」/>
+              <line x1=」20」 y1=」18」 x2=」20」 y2=」40」 stroke=」#00d2ff」 stroke-width=」2」/>
+              <line x1=」20」 y1=」40」 x2=」14」 y2=」55」 stroke=」#00d2ff」 stroke-width=」2」/>
+              <line x1=」20」 y1=」40」 x2=」26」 y2=」55」 stroke=」#00d2ff」 stroke-width=」2」/>
+              <!-- sword -->
+              <line x1=」20」 y1=」28」 x2=」40」 y2=」20」 stroke=」#00d2ff」 stroke-width=」3」/>
+              <circle cx=」40」 cy=」20」 r=」3」 fill=」#00d2ff」/>
+            </g>
+            <!-- Right fighter silhouette (mirrored, red) -->
+            <g transform=」translate(225, 15) scale(-1, 1)」>
+              <circle cx=」20」 cy=」10」 r=」8」 fill=」none」 stroke=」#ff3d57」 stroke-width=」2」/>
+              <line x1=」20」 y1=」18」 x2=」20」 y2=」40」 stroke=」#ff3d57」 stroke-width=」2」/>
+              <line x1=」20」 y1=」40」 x2=」14」 y2=」55」 stroke=」#ff3d57」 stroke-width=」2」/>
+              <line x1=」20」 y1=」40」 x2=」26」 y2=」55」 stroke=」#ff3d57」 stroke-width=」2」/>
+              <line x1=」20」 y1=」28」 x2=」40」 y2=」20」 stroke=」#ff3d57」 stroke-width=」3」/>
+              <circle cx=」40」 cy=」20」 r=」3」 fill=」#ff3d57」/>
+            </g>
+            <!-- HP bars -->
+            <rect x=」20」 y=」80」 width=」80」 height=」8」 rx=」4」 fill=」#1a2238」/>
+            <rect x=」20」 y=」80」 width=」60」 height=」8」 rx=」4」 fill=」url(#pr-duel-vs)」/>
+            <text x=」22」 y=」76」 font-size=」9」 font-weight=」800」 fill=」#00d2ff」>A · 75/100</text>
+            <rect x=」140」 y=」80」 width=」80」 height=」8」 rx=」4」 fill=」#1a2238」/>
+            <rect x=」155」 y=」80」 width=」50」 height=」8」 rx=」4」 fill=」url(#pr-duel-vs)」/>
+            <text x=」218」 y=」76」 text-anchor=」end」 font-size=」9」 font-weight=」800」 fill=」#ff3d57」>B · 62/100</text>
+            <!-- VS badge -->
+            <circle cx=」120」 cy=」50」 r=」18」 fill=」url(#pr-duel-vs)」/>
+            <text x=」120」 y=」55」 text-anchor=」middle」 font-size=」12」 font-weight=」900」 fill=」white」>VS</text>
+            <!-- damage floaters -->
+            <text x=」80」 y=」45」 font-family=」SF Mono」 font-weight=」900」 font-size=」16」 fill=」#ff3d57」>-8</text>
+            <text x=」155」 y=」45」 font-family=」SF Mono」 font-weight=」900」 font-size=」16」 fill=」#00d2ff」>-12</text>
+          </svg>
+        </div>
+        <div class=」mode-body」>
+          <div class=」mode-icon」>⚔️</div>
+          <div class=」mode-title」>一對一對戰</div>
+          <div class=」mode-desc」>兩部手機對戰。HP 條、取消窗口、傷害特效。</div>
+          <div class=」mode-tag」>對戰 · 1v1</div>
+        </div>
       </div>
-      <div class=」mode-card」 style=」--mode-accent: #7c4dff」 onclick=」Audio.uiClick();enterMode('boss')」>
-        <div class=」mode-icon」>👹</div>
-        <div class=」mode-title」>魔王討伐</div>
-        <div class=」mode-desc」>小隊挑戰 3 階段密碼魔王。團隊 combo 計量表、MVP、階段轉換。</div>
-        <div class=」mode-tag」>合作 · 視覺展示</div>
+
+      <!-- Boss Raid -->
+      <div class=」mode-card」 style=」--mode-accent: #7c4dff; --mode-accent-glow: rgba(124,77,255,0.4);」 onclick=」Audio.uiClick();enterMode('boss')」>
+        <div class=」mode-preview」>
+          <svg viewBox=」0 0 240 110」 preserveAspectRatio=」xMidYMid meet」>
+            <defs>
+              <radialGradient id=」pr-boss-aura」 cx=」50%」 cy=」50%」 r=」50%」>
+                <stop offset=」0%」 stop-color=」#7c4dff」 stop-opacity=」0.5」/>
+                <stop offset=」100%」 stop-color=」#7c4dff」 stop-opacity=」0」/>
+              </radialGradient>
+              <linearGradient id=」pr-boss-hp」 x1=」0」 y1=」0」 x2=」1」 y2=」0」>
+                <stop offset=」0%」 stop-color=」#ff3d57」/>
+                <stop offset=」100%」 stop-color=」#ff9100」/>
+              </linearGradient>
+            </defs>
+            <rect width=」240」 height=」110」 fill=」#1a0a2e」/>
+            <!-- boss aura -->
+            <circle cx=」120」 cy=」40」 r=」40」 fill=」url(#pr-boss-aura)」/>
+            <!-- orbiting symbols -->
+            <text x=」60」 y=」25」 font-family=」SF Mono」 font-size=」18」 font-weight=」900」 fill=」#ffcc00」 opacity=」0.8」>
+              <animateTransform attributeName=」transform」 type=」rotate」 from=」0 120 50」 to=」360 120 50」 dur=」6s」 repeatCount=」indefinite」/>·</text>
+            <text x=」170」 y=」30」 font-family=」SF Mono」 font-size=」18」 font-weight=」900」 fill=」#ffcc00」 opacity=」0.8」>
+              <animateTransform attributeName=」transform」 type=」rotate」 from=」360 120 50」 to=」0 120 50」 dur=」7s」 repeatCount=」indefinite」/>−</text>
+            <!-- Boss: simplified hooded figure -->
+            <g transform=」translate(95, 15)」>
+              <!-- Hood -->
+              <path d=」M 5 35 Q 5 8 25 5 Q 45 8 45 35 L 40 55 L 10 55 Z」 fill=」#000」 stroke=」#7c4dff」 stroke-width=」1.5」/>
+              <!-- eyes -->
+              <ellipse cx=」18」 cy=」30」 rx=」3」 ry=」2」 fill=」#7c4dff」/>
+              <ellipse cx=」32」 cy=」30」 rx=」3」 ry=」2」 fill=」#7c4dff」/>
+              <circle cx=」18」 cy=」30」 r=」1」 fill=」#fff」/>
+              <circle cx=」32」 cy=」30」 r=」1」 fill=」#fff」/>
+              <!-- robe body -->
+              <path d=」M 10 50 Q 0 70 0 80 L 50 80 Q 50 70 40 50 Z」 fill=」#2a1a4e」 stroke=」#7c4dff」 stroke-width=」1」/>
+              <!-- emblem -->
+              <circle cx=」25」 cy=」65」 r=」4」 fill=」none」 stroke=」#ffcc00」 stroke-width=」1」/>
+              <circle cx=」25」 cy=」65」 r=」2」 fill=」#ffcc00」/>
+            </g>
+            <!-- Magic circle on ground -->
+            <ellipse cx=」120」 cy=」80」 rx=」50」 ry=」4」 fill=」none」 stroke=」#7c4dff」 stroke-width=」1」 opacity=」0.5」/>
+            <!-- 8 scouts below -->
+            <circle cx=」20」 cy=」92」 r=」3」 fill=」#00d2ff」/>
+            <circle cx=」45」 cy=」92」 r=」3」 fill=」#00d2ff」/>
+            <circle cx=」70」 cy=」92」 r=」3」 fill=」#00d2ff」/>
+            <circle cx=」95」 cy=」92」 r=」3」 fill=」#00d2ff」/>
+            <circle cx=」145」 cy=」92」 r=」3」 fill=」#00d2ff」/>
+            <circle cx=」170」 cy=」92」 r=」3」 fill=」#00d2ff」/>
+            <circle cx=」195」 cy=」92」 r=」3」 fill=」#00d2ff」/>
+            <circle cx=」220」 cy=」92」 r=」3」 fill=」#00d2ff」/>
+            <!-- Boss HP -->
+            <rect x=」20」 y=」100」 width=」200」 height=」6」 rx=」3」 fill=」#1a2238」/>
+            <rect x=」20」 y=」100」 width=」140」 height=」6」 rx=」3」 fill=」url(#pr-boss-hp)」/>
+          </svg>
+        </div>
+        <div class=」mode-body」>
+          <div class=」mode-icon」>👹</div>
+          <div class=」mode-title」>魔王討伐</div>
+          <div class=」mode-desc」>小隊挑戰 3 階段密碼魔王。團隊 combo、MVP。</div>
+          <div class=」mode-tag」>合作 · 童軍小隊</div>
+        </div>
       </div>
-      <div class=」mode-card」 style=」--mode-accent: #00e676」 onclick=」Audio.uiClick();enterMode('sidescroll')」>
-        <div class=」mode-icon」>🏃</div>
-        <div class=」mode-title」>橫向捲動跑酷</div>
-        <div class=」mode-desc」>Mario 式無盡跑酷。密碼出現就解碼,跑、跳、存活。</div>
-        <div class=」mode-tag」>訓練 · 無限</div>
+
+      <!-- Side-Scroll Run -->
+      <div class=」mode-card」 style=」--mode-accent: #00e676; --mode-accent-glow: rgba(0,230,118,0.4);」 onclick=」Audio.uiClick();enterMode('sidescroll')」>
+        <div class=」mode-preview」>
+          <svg viewBox=」0 0 240 110」 preserveAspectRatio=」xMidYMid meet」>
+            <defs>
+              <linearGradient id=」pr-ss-sky」 x1=」0」 y1=」0」 x2=」0」 y2=」1」>
+                <stop offset=」0%」 stop-color=」#2a1a5e」/>
+                <stop offset=」100%」 stop-color=」#4a2a8e」/>
+              </linearGradient>
+              <linearGradient id=」pr-ss-ground」 x1=」0」 y1=」0」 x2=」0」 y2=」1」>
+                <stop offset=」0%」 stop-color=」rgba(0,210,255,0.6)」/>
+                <stop offset=」100%」 stop-color=」#00d2ff」/>
+              </linearGradient>
+            </defs>
+            <rect width=」240」 height=」110」 fill=」url(#pr-ss-sky)」/>
+            <!-- twinkling stars -->
+            <circle cx=」30」 cy=」15」 r=」1」 fill=」#fff」/>
+            <circle cx=」80」 cy=」25」 r=」1.5」 fill=」#ffcc00」/>
+            <circle cx=」140」 cy=」18」 r=」1」 fill=」#fff」/>
+            <circle cx=」200」 cy=」28」 r=」1.5」 fill=」#fff」/>
+            <!-- distant buildings silhouette -->
+            <rect x=」40」 y=」55」 width=」14」 height=」20」 fill=」rgba(0,0,0,0.4)」/>
+            <rect x=」60」 y=」50」 width=」10」 height=」25」 fill=」rgba(0,0,0,0.4)」/>
+            <rect x=」160」 y=」52」 width=」12」 height=」23」 fill=」rgba(0,0,0,0.4)」/>
+            <rect x=」180」 y=」58」 width=」14」 height=」17」 fill=」rgba(0,0,0,0.4)」/>
+            <!-- ground -->
+            <rect x=」0」 y=」75」 width=」240」 height=」35」 fill=」url(#pr-ss-ground)」/>
+            <!-- ground stripes (parallax) -->
+            <rect x=」10」 y=」80」 width=」3」 height=」8」 fill=」rgba(0,0,0,0.4)」/>
+            <rect x=」40」 y=」80」 width=」3」 height=」8」 fill=」rgba(0,0,0,0.4)」/>
+            <rect x=」70」 y=」80」 width=」3」 height=」8」 fill=」rgba(0,0,0,0.4)」/>
+            <rect x=」130」 y=」80」 width=」3」 height=」8」 fill=」rgba(0,0,0,0.4)」/>
+            <rect x=」160」 y=」80」 width=」3」 height=」8」 fill=」rgba(0,0,0,0.4)」/>
+            <rect x=」190」 y=」80」 width=」3」 height=」8」 fill=」rgba(0,0,0,0.4)」/>
+            <rect x=」220」 y=」80」 width=」3」 height=」8」 fill=」rgba(0,0,0,0.4)」/>
+            <!-- running character -->
+            <g transform=」translate(95, 35)」>
+              <circle cx=」15」 cy=」10」 r=」7」 fill=」#00d2ff」 stroke=」#0a0e1a」 stroke-width=」1.5」/>
+              <circle cx=」13」 cy=」9」 r=」1.5」 fill=」#fff」/>
+              <circle cx=」17」 cy=」9」 r=」1.5」 fill=」#fff」/>
+              <line x1=」15」 y1=」17」 x2=」15」 y2=」30」 stroke=」#00d2ff」 stroke-width=」3」/>
+              <line x1=」15」 y1=」22」 x2=」8」 y2=」28」 stroke=」#00d2ff」 stroke-width=」2.5」/>
+              <line x1=」15」 y1=」22」 x2=」22」 y2=」28」 stroke=」#00d2ff」 stroke-width=」2.5」/>
+              <line x1=」15」 y1=」30」 x2=」10」 y2=」38」 stroke=」#00d2ff」 stroke-width=」3」/>
+              <line x1=」15」 y1=」30」 x2=」20」 y2=」38」 stroke=」#00d2ff」 stroke-width=」3」/>
+            </g>
+            <!-- floating cipher prompt bubble -->
+            <rect x=」160」 y=」40」 width=」50」 height=」22」 rx=」4」 fill=」rgba(0,210,255,0.3)」 stroke=」#00d2ff」 stroke-width=」1.5」/>
+            <text x=」185」 y=」55」 text-anchor=」middle」 font-family=」SF Mono」 font-size=」11」 font-weight=」900」 fill=」#ffcc00」>..-</text>
+            <!-- hearts -->
+            <text x=」10」 y=」12」 font-size=」11」 fill=」#ff3d57」>♥♥♥</text>
+            <!-- distance counter -->
+            <text x=」230」 y=」14」 text-anchor=」end」 font-family=」SF Mono」 font-size=」9」 font-weight=」700」 fill=」#00e676」>240m</text>
+          </svg>
+        </div>
+        <div class=」mode-body」>
+          <div class=」mode-icon」>🏃</div>
+          <div class=」mode-title」>橫向捲動跑酷</div>
+          <div class=」mode-desc」>Mario 式無盡跑酷。密碼出現就解碼,跑、跳、存活。</div>
+          <div class=」mode-tag」>訓練 · 無限</div>
+        </div>
       </div>
+
     </div>
 
     <div class=」landing-extras mt-6」>
@@ -1152,8 +1605,8 @@ textarea.input-std { font-family: 」SF Mono」, monospace; resize: vertical; mi
       </div>
     </div>
 
-    <div class=」text-center mt-6 text-dim」 style=」font-size: 13px;」>
-      Prototype 製作 · 無網路 · 無帳號 · 純粹體驗
+    <div class=」text-center mt-6 text-dim」 style=」font-size: 12px; letter-spacing: 0.1em;」>
+      PROTOTYPE BUILD · v0.6 · 無網路 · 無帳號
     </div>
   </div>
 </div>
@@ -3696,10 +4149,537 @@ function closeStats() {
 }
 
 /* ============================================================
+   PHASER 3 — Side-Scroll Run (the real game engine version)
+   ============================================================
+   Phaser replaces the HTML/CSS approach for actual gameplay.
+   HTML stays for landing / settings / UI overlays.
+============================================================ */
+let PHASER_GAME = null;
+let PHASER_SCENE_KEY = 'SideScrollScene';
+const PHASER_CIPHERS = ['Morse','Semaphore','Pigpen','Grid','PhoneT9','Braille'];
+let PHASER_STATE = {
+  ciphers: ['Morse','Semaphore','Pigpen','Grid','PhoneT9','Braille'],
+  speed: 1.0,
+  spawnRate: 2.0,
+  lives: 3,
+  minT: 0.8,
+  maxT: 5.0,
+  distance: 0,
+  score: 0,
+  combo: 0,
+  bestCombo: 0,
+  decoded: 0,
+  weakLetters: {},
+  currentPrompt: null,
+  promptStartTime: 0,
+  promptShown: false,
+  answers: [],
+  running: false,
+};
+
+class SideScrollScene extends Phaser.Scene {
+  constructor() { super('SideScrollScene'); }
+
+  create() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+
+    // ===== BACKGROUND LAYERS =====
+    // Sky
+    this.add.rectangle(0, 0, W * 3, H, 0x1a0a3e).setOrigin(0, 0).setAlpha(0.8);
+    // Gradient stripes for sky depth
+    for (let i = 0; i < 5; i++) {
+      this.add.rectangle(0, i * 60, W * 3, 30, 0x4a2a8e, 0.3 - i * 0.05).setOrigin(0, 0);
+    }
+
+    // Stars (twinkling)
+    this.stars = [];
+    for (let i = 0; i < 40; i++) {
+      const star = this.add.circle(
+        Phaser.Math.Between(0, W * 3),
+        Phaser.Math.Between(10, H * 0.5),
+        Phaser.Math.Between(1, 2),
+        0xffffff
+      );
+      star.alpha = Phaser.Math.FloatBetween(0.3, 1);
+      this.stars.push(star);
+      this.tweens.add({
+        targets: star,
+        alpha: Phaser.Math.FloatBetween(0.2, 1),
+        duration: Phaser.Math.Between(1000, 3000),
+        yoyo: true,
+        repeat: -1,
+      });
+    }
+
+    // Distant city silhouette
+    this.cityFar = this.add.container(0, 0);
+    for (let i = 0; i < 15; i++) {
+      const x = i * 120;
+      const h = Phaser.Math.Between(40, 80);
+      this.add.rectangle(x, H * 0.55 - h, 30, h, 0x1a0a2e).setOrigin(0, 0);
+    }
+
+    // Near city silhouette
+    this.cityNear = this.add.container(0, 0);
+    for (let i = 0; i < 20; i++) {
+      const x = i * 80;
+      const h = Phaser.Math.Between(60, 120);
+      this.add.rectangle(x, H * 0.65 - h, 25, h, 0x0a0e1e).setOrigin(0, 0);
+      // windows
+      for (let y = 0; y < h - 20; y += 12) {
+        if (Math.random() > 0.6) {
+          this.add.rectangle(x + 8, H * 0.65 - h + y + 8, 3, 3, 0xffcc00, 0.6).setOrigin(0, 0);
+        }
+      }
+    }
+
+    // ===== GROUND =====
+    this.groundY = H * 0.78;
+    this.ground = this.add.container(0, this.groundY);
+    // Ground base
+    this.add.rectangle(0, 0, W * 4, H * 0.22, 0x001a2e).setOrigin(0, 0);
+    // Ground top stripe (cyan)
+    this.add.rectangle(0, 0, W * 4, 4, 0x00d2ff).setOrigin(0, 0);
+    // Ground stripes (parallax)
+    this.groundStripes = [];
+    for (let i = 0; i < 50; i++) {
+      const stripe = this.add.rectangle(i * 80, 8, 3, H * 0.18, 0x000000, 0.4).setOrigin(0, 0);
+      this.groundStripes.push(stripe);
+    }
+    // Glow line
+    this.add.rectangle(0, -2, W * 4, 8, 0x00d2ff, 0.3).setOrigin(0, 0);
+
+    // ===== CHARACTER (Cyber Scout) =====
+    this.charX = 180;
+    this.charY = this.groundY - 8;
+    this.charContainer = this.add.container(this.charX, this.charY);
+
+    // Hover ring under feet
+    this.hoverRing = this.add.ellipse(this.charX, this.groundY + 4, 80, 14, 0x00d2ff, 0.5);
+    this.hoverRing.setStrokeStyle(2, 0x00d2ff, 0.8);
+
+    // Character built with Graphics (procedural sprite)
+    this.charBody = this.add.graphics();
+    this.charContainer.add(this.charBody);
+    this.drawCharacter('idle');
+
+    // Bobbing animation
+    this.tweens.add({
+      targets: this.charContainer,
+      y: this.charY - 6,
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // ===== PARTICLE EMITTERS =====
+    // Jump burst (used on correct answer)
+    this.jumpParticles = this.add.particles(0, 0, 'particles', {
+      frameQuantity: 0, // use custom particles
+      lifespan: 600,
+      speed: { min: 100, max: 300 },
+      scale: { start: 0.6, end: 0 },
+      alpha: { start: 1, end: 0 },
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    // Use a generated texture for particles
+    const particleTex = this.add.graphics();
+    particleTex.fillStyle(0x00e676, 1);
+    particleTex.fillCircle(8, 8, 8);
+    particleTex.generateTexture('particles', 16, 16);
+    particleTex.destroy();
+    this.jumpParticles.setTexture('particles');
+    this.jumpParticles.setParticleTint(0x00e676);
+
+    // Hurt particles (red)
+    this.hurtParticles = this.add.particles(0, 0, 'particles', {
+      lifespan: 400,
+      speed: { min: 80, max: 200 },
+      scale: { start: 0.4, end: 0 },
+      alpha: { start: 1, end: 0 },
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    this.hurtParticles.setTexture('particles');
+    this.hurtParticles.setParticleTint(0xff3d57);
+
+    // ===== INPUT & GAME STATE =====
+    PHASER_STATE.distance = 0;
+    PHASER_STATE.score = 0;
+    PHASER_STATE.combo = 0;
+    PHASER_STATE.bestCombo = 0;
+    PHASER_STATE.decoded = 0;
+    PHASER_STATE.weakLetters = {};
+    PHASER_STATE.answers = [];
+    PHASER_STATE.running = true;
+
+    // Show HTML UI overlay
+    document.getElementById('phaser-hud').style.display = 'flex';
+
+    // Spawn first prompt
+    this.spawnPrompt();
+
+    // Set up HTML input handler
+    const input = document.getElementById('ph-input');
+    input.value = '';
+    input.focus();
+
+    // Update HUD periodically (50ms)
+    this.hudTimer = this.time.addEvent({
+      delay: 50,
+      callback: () => this.updateHUD(),
+      loop: true,
+    });
+  }
+
+  drawCharacter(state) {
+    const g = this.charBody;
+    g.clear();
+
+    // State affects pose
+    const isJump = state === 'jump';
+    const isHurt = state === 'hurt';
+    const lunge = isJump ? 20 : 0;
+    const squish = isHurt ? 0.9 : 1;
+
+    // Body color
+    const primary = 0x00d2ff;
+    const accent = 0xffcc00;
+
+    // Visor glow
+    g.fillStyle(0x00d2ff, 0.15);
+    g.fillCircle(0, -30, 50);
+
+    // Body
+    g.fillStyle(0x1a2238, 1);
+    g.fillRoundedRect(-15, -50 + lunge, 30, 50, 4);
+    g.lineStyle(2, primary, 1);
+    g.strokeRoundedRect(-15, -50 + lunge, 30, 50, 4);
+
+    // Chest core (glowing)
+    g.fillStyle(accent, 0.4);
+    g.fillCircle(0, -28 + lunge, 8);
+    g.fillStyle(accent, 1);
+    g.fillCircle(0, -28 + lunge, 5);
+
+    // Head/helmet
+    g.fillStyle(0x1a2238, 1);
+    g.fillRoundedRect(-12, -75 + lunge, 24, 30, 4);
+    g.lineStyle(2, primary, 1);
+    g.strokeRoundedRect(-12, -75 + lunge, 24, 30, 4);
+
+    // Visor
+    g.fillStyle(primary, 1);
+    g.fillRoundedRect(-10, -65 + lunge, 20, 8, 2);
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(-5, -61 + lunge, 2);
+    g.fillCircle(0, -61 + lunge, 2);
+    g.fillCircle(5, -61 + lunge, 2);
+
+    // Antenna
+    g.lineStyle(2, primary, 1);
+    g.lineBetween(0, -75 + lunge, 0, -85 + lunge);
+    g.fillStyle(accent, 1);
+    g.fillCircle(0, -86 + lunge, 2);
+
+    // Arms
+    g.fillStyle(0x1a2238, 1);
+    g.fillRoundedRect(-22, -45 + lunge, 8, 25, 3);  // back arm
+    g.lineStyle(1.5, primary, 1);
+    g.strokeRoundedRect(-22, -45 + lunge, 8, 25, 3);
+    g.fillStyle(0x1a2238, 1);
+    g.fillRoundedRect(14, -45 + lunge, 8, 25, 3);  // front arm
+    g.lineStyle(1.5, primary, 1);
+    g.strokeRoundedRect(14, -45 + lunge, 8, 25, 3);
+
+    // Sword (when jumping)
+    if (isJump) {
+      g.fillStyle(primary, 1);
+      g.fillRect(20, -28 + lunge, 35, 4);
+      g.fillStyle(accent, 1);
+      g.fillRect(20, -28 + lunge, 35, 1.5);
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(55, -26 + lunge, 3);
+    }
+
+    // Legs
+    g.fillStyle(0x1a2238, 1);
+    g.fillRoundedRect(-10, 0, 7, 20, 2);
+    g.lineStyle(1.5, primary, 1);
+    g.strokeRoundedRect(-10, 0, 7, 20, 2);
+    g.fillRoundedRect(3, 0, 7, 20, 2);
+    g.lineStyle(1.5, primary, 1);
+    g.strokeRoundedRect(3, 0, 7, 20, 2);
+
+    // Boots
+    g.fillStyle(primary, 1);
+    g.fillRect(-12, 16, 11, 4);
+    g.fillRect(1, 16, 11, 4);
+
+    // Hurt red flash overlay
+    if (isHurt) {
+      g.fillStyle(0xff3d57, 0.4);
+      g.fillCircle(0, -30, 60);
+    }
+
+    // Subtle scale
+    this.charContainer.setScale(squish, 2 - squish);
+  }
+
+  spawnPrompt() {
+    const cipher = PHASER_STATE.ciphers[Math.floor(Math.random() * PHASER_STATE.ciphers.length)];
+    const target = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+    const encoded = encodeToCipher(target, cipher);
+    PHASER_STATE.currentPrompt = { cipher, target, encoded };
+    PHASER_STATE.promptStartTime = performance.now();
+    PHASER_STATE.promptShown = true;
+
+    // Update HTML bubble
+    const bubble = document.getElementById('ph-prompt-bubble');
+    bubble.style.display = 'block';
+    document.getElementById('ph-prompt-label').textContent = (cipher === 'PhoneT9' ? 'PHONE T9' : cipher.toUpperCase());
+    const content = document.getElementById('ph-prompt-content');
+    content.innerHTML = '';
+    renderCipherPrompt(content, encoded, cipher);
+
+    const input = document.getElementById('ph-input');
+    input.value = '';
+    input.focus();
+  }
+
+  updateHUD() {
+    document.getElementById('ph-dist').textContent = Math.floor(PHASER_STATE.distance) + ' m';
+    document.getElementById('ph-score').textContent = PHASER_STATE.score.toLocaleString();
+    document.getElementById('ph-combo').textContent = PHASER_STATE.combo;
+    const hearts = '♥'.repeat(Math.max(0, PHASER_STATE.lives)) +
+      '<span style="opacity:0.2">♥</span>'.repeat(Math.max(0, 3 - PHASER_STATE.lives));
+    document.getElementById('ph-lives').innerHTML = hearts;
+    if (PHASER_STATE.currentPrompt && PHASER_STATE.promptShown) {
+      const elapsed = (performance.now() - PHASER_STATE.promptStartTime) / 1000;
+      const remaining = Math.max(0, PHASER_STATE.maxT - elapsed);
+      document.getElementById('ph-prompt-bar').style.width =
+        ((remaining / PHASER_STATE.maxT) * 100) + '%';
+      if (remaining <= 0) this.handleAnswer(false, PHASER_STATE.maxT * 1000);
+    }
+  }
+
+  handleAnswer(correct, elapsedMs) {
+    const target = PHASER_STATE.currentPrompt.target;
+    const inWindow = elapsedMs >= PHASER_STATE.minT * 1000;
+
+    if (correct && inWindow) {
+      PHASER_STATE.combo++;
+      PHASER_STATE.bestCombo = Math.max(PHASER_STATE.bestCombo, PHASER_STATE.combo);
+      PHASER_STATE.decoded++;
+      const mult = comboMultiplier(PHASER_STATE.combo);
+      const speedBonus = 1 + Math.max(0, (PHASER_STATE.maxT * 1000 - elapsedMs) / (PHASER_STATE.maxT * 1000)) * 0.5;
+      PHASER_STATE.score += Math.round(100 * mult * speedBonus);
+
+      // Jump animation
+      this.drawCharacter('jump');
+      this.tweens.add({
+        targets: this.charContainer,
+        y: this.charY - 130,
+        duration: 300,
+        yoyo: true,
+        ease: 'Quad.easeOut',
+        onComplete: () => this.drawCharacter('idle'),
+      });
+
+      // Particle burst (green)
+      this.jumpParticles.emitParticleAt(this.charX + 20, this.charY - 30, 20);
+      Audio.jump();
+      Audio.correct();
+
+      // Camera shake
+      this.cameras.main.shake(100, 0.005);
+
+      // Save
+      if (!SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher])
+        SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher] = {};
+      SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] =
+        (SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] || 0) + 1;
+      if (PHASER_STATE.score > SAVE.sidescroll.bestScore) SAVE.sidescroll.bestScore = PHASER_STATE.score;
+      if (PHASER_STATE.bestCombo > SAVE.sidescroll.bestCombo) SAVE.sidescroll.bestCombo = PHASER_STATE.bestCombo;
+      commitSave();
+
+    } else if (correct && !inWindow) {
+      PHASER_STATE.combo = 0;
+      Audio.uiClick();
+    } else {
+      PHASER_STATE.combo = 0;
+      PHASER_STATE.lives--;
+      this.drawCharacter('hurt');
+      this.cameras.main.shake(200, 0.01);
+      this.cameras.main.flash(150, 255, 61, 87);
+      this.hurtParticles.emitParticleAt(this.charX, this.charY - 30, 12);
+      Audio.hurt();
+
+      // Save
+      if (!SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher])
+        SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher] = {};
+      SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] =
+        (SAVE.weakLetters[PHASER_STATE.currentPrompt.cipher][target[0]] || 0) + 1;
+
+      setTimeout(() => this.drawCharacter('idle'), 300);
+    }
+
+    if (PHASER_STATE.lives <= 0) {
+      this.endScene();
+      return;
+    }
+
+    // Schedule next prompt
+    const delay = Math.max(300, 1000 / PHASER_STATE.spawnRate);
+    PHASER_STATE.promptShown = false;
+    document.getElementById('ph-prompt-bubble').style.display = 'none';
+    this.time.delayedCall(delay, () => { if (PHASER_STATE.running) this.spawnPrompt(); });
+  }
+
+  endScene() {
+    PHASER_STATE.running = false;
+    document.getElementById('phaser-hud').style.display = 'none';
+    document.getElementById('ph-prompt-bubble').style.display = 'none';
+
+    // Save stats
+    SAVE.sidescroll.totalRuns++;
+    if (Math.floor(PHASER_STATE.distance) > SAVE.sidescroll.bestDistance)
+      SAVE.sidescroll.bestDistance = Math.floor(PHASER_STATE.distance);
+    if (SAVE.sidescroll.bestDistance >= 5000) recordAchievement('marathoner', '馬拉松跑者');
+    SAVE.lastPlayed = Date.now();
+    recordAchievement('first_run', '首次遊玩');
+    commitSave();
+    Audio.reveal();
+
+    // Show end screen
+    const endHTML = `
+      <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); z-index: 80;">
+        <div class="reveal-stage" style="border-color: var(--good); max-width: 500px;">
+          <div class="reveal-label" style="color: var(--good);">RUN COMPLETE</div>
+          <div class="result-grid mt-6">
+            <div class="result-cell"><div class="result-cell-label">DISTANCE</div><div class="result-cell-value text-good">${Math.floor(PHASER_STATE.distance)} m</div></div>
+            <div class="result-cell"><div class="result-cell-label">SCORE</div><div class="result-cell-value">${PHASER_STATE.score.toLocaleString()}</div></div>
+            <div class="result-cell"><div class="result-cell-label">DECODED</div><div class="result-cell-value">${PHASER_STATE.decoded}</div></div>
+            <div class="result-cell"><div class="result-cell-label">BEST COMBO</div><div class="result-cell-value text-gold">${PHASER_STATE.bestCombo}</div></div>
+          </div>
+          <div class="mt-6 flex-center gap-3">
+            <button class="btn btn-primary btn-big" onclick="restartPhaserGame()">RUN AGAIN</button>
+            <button class="btn btn-ghost" onclick="exitPhaserGame()">MENU</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const endDiv = document.createElement('div');
+    endDiv.id = 'phaser-end-overlay';
+    endDiv.innerHTML = endHTML;
+    document.getElementById('phaser-ui').appendChild(endDiv);
+
+    this.scene.pause();
+  }
+
+  update(time, delta) {
+    if (!PHASER_STATE.running) return;
+    const dt = delta / 1000;
+    const speedMul = PHASER_STATE.speed;
+
+    PHASER_STATE.distance += 60 * dt * speedMul;
+
+    // Parallax scroll: shift all ground objects + city objects + stars
+    const scrollSpeed = 100 * dt * speedMul;
+
+    // Scroll stars
+    this.stars.forEach(s => { s.x -= scrollSpeed * 0.2; if (s.x < 0) s.x += this.scale.width * 3; });
+    // Scroll city
+    this.cityFar.list.forEach(o => { if (o.x !== undefined) { o.x -= scrollSpeed * 0.4; if (o.x < -100) o.x += 15 * 120; } });
+    this.cityNear.list.forEach(o => { if (o.x !== undefined) { o.x -= scrollSpeed * 0.7; if (o.x < -100) o.x += 20 * 80; } });
+    // Scroll ground stripes
+    this.groundStripes.forEach(s => { s.x -= scrollSpeed * 1.5; if (s.x < -100) s.x += 50 * 80; });
+  }
+}
+
+// ===== Phaser Game Init =====
+function initPhaserGame() {
+  const config = {
+    type: Phaser.AUTO,
+    parent: 'phaser-game',
+    backgroundColor: '#0a0e1a',
+    scale: {
+      mode: Phaser.Scale.RESIZE,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    },
+    physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
+    scene: [SideScrollScene],
+  };
+  PHASER_GAME = new Phaser.Game(config);
+}
+
+function startPhaserMode(sceneKey) {
+  PHASER_SCENE_KEY = sceneKey;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const host = document.getElementById('phaser-host');
+  host.classList.remove('hidden');
+
+  if (!PHASER_GAME) initPhaserGame();
+
+  // Remove any existing end overlay
+  const oldEnd = document.getElementById('phaser-end-overlay');
+  if (oldEnd) oldEnd.remove();
+
+  setTimeout(() => {
+    PHASER_GAME.scene.stop('SideScrollScene');
+    PHASER_GAME.scene.start('SideScrollScene');
+  }, 50);
+}
+
+function exitPhaserGame() {
+  if (PHASER_GAME) PHASER_GAME.scene.stop('SideScrollScene');
+  const host = document.getElementById('phaser-host');
+  host.classList.add('hidden');
+  const oldEnd = document.getElementById('phaser-end-overlay');
+  if (oldEnd) oldEnd.remove();
+  showScreen('landing');
+}
+
+function restartPhaserGame() {
+  startPhaserMode('SideScrollScene');
+}
+
+function phaserSubmitAnswer() {
+  if (!PHASER_STATE.currentPrompt || !PHASER_STATE.running) return;
+  const input = document.getElementById('ph-input').value.toUpperCase().replace(/\s+/g, '').trim();
+  const elapsed = performance.now() - PHASER_STATE.promptStartTime;
+  const correct = input === PHASER_STATE.currentPrompt.target;
+  const scene = PHASER_GAME.scene.getScene('SideScrollScene');
+  if (scene && scene.handleAnswer) scene.handleAnswer(correct, elapsed);
+}
+
+// Override the sidescroll entry to use Phaser
+// Patch enterMode
+const _origEnterMode = enterMode;
+window.enterMode = function(name) {
+  if (name === 'sidescroll') {
+    Audio.uiClick();
+    startPhaserMode('SideScrollScene');
+    return;
+  }
+  _origEnterMode(name);
+};
+
+/* ============================================================
    INIT
 ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   showScreen('landing');
+  // Render hero characters
+  const heroBlue = document.getElementById('hero-blue');
+  const heroWarden = document.getElementById('hero-warden');
+  if (heroBlue) heroBlue.innerHTML = CHARACTERS['cyber-blue'].buildSVG('idle');
+  if (heroWarden) heroWarden.innerHTML = CHARACTERS['cipher-warden'].buildSVG('idle');
   // Update sound toggle initial state
   const btn = document.getElementById('sound-toggle');
   if (btn) btn.textContent = Audio.enabled ? '🔊 音效:開' : '🔇 音效:關';
