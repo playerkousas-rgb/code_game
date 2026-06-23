@@ -311,7 +311,7 @@
 <div id="input-overlay" class="hidden">
   <div class="input-zone">
     <div class="input-prompt-label">TYPE TO DECODE:</div>
-    <input id="cipher-input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="1" placeholder="A-Z">
+    <input id="cipher-input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="A-Z">
     <div class="input-feedback" id="input-feedback"></div>
   </div>
 </div>
@@ -1215,59 +1215,7 @@ function drawComboTexts() {
 // ============================================================
 // NEUTRALIZE THREAT (matches by typed letter)
 // ============================================================
-function neutralizeMatching(letter) {
-  letter = letter.toUpperCase();
-  // Find a threat whose answer matches the typed letter
-  const match = threats.find(t => t.answer === letter);
-  if (!match) {
-    // Wrong/no match — light feedback, no penalty in this design
-    playWrongInput();
-    spawnComboText(W/2, H/2, '?', '#ff0055');
-    return;
-  }
 
-  // Remove it
-  threats.splice(threats.indexOf(match), 1);
-  totalNeutralized++;
-  stageNeutralized++;
-
-  // Track cipher stats
-  const stats = getCipherStats(match.cipher);
-  stats.correct++;
-  stats.total++;
-  // Reset weak letter on correct
-  if (stats.weak[letter]) {
-    stats.weak[letter] = Math.max(0, stats.weak[letter] - 1);
-    if (stats.weak[letter] === 0) delete stats.weak[letter];
-  }
-
-  combo++;
-  if (combo > maxCombo) maxCombo = combo;
-
-  const multiplier = Math.min(combo, 10);
-  const pts = 100 * multiplier;
-  score += pts;
-  stageScore += pts;
-
-  // Particles
-  const color = CIPHER_COLORS[match.cipher] || match.glow;
-  spawnParticles(match.x, match.y, color, 18 + combo * 2);
-  spawnParticles(match.x, match.y, '#ffffff', 8);
-
-  playNeutralize();
-  triggerFlash('rgba(0,255,255,0.15)');
-
-  // Combo text
-  if (combo > 1) {
-    spawnComboText(match.x, match.y - 20, `×${combo} COMBO!`, combo > 4 ? '#ffff00' : '#ff00ff');
-    if (combo % 3 === 0) playComboUp();
-  } else {
-    spawnComboText(match.x, match.y - 20, `+${pts}`, color);
-  }
-
-  updateHUD();
-  checkStageComplete();
-}
 
 function playWrongInput() {
   if (!audioCtx) return;
@@ -1470,31 +1418,116 @@ function restartGame() {
 }
 
 // ============================================================
-// INPUT (typing-based)
+// INPUT (typing-based with commit-on-pause)
 // ============================================================
+let inputBuffer = '';
 let lastInputTime = 0;
+let inputPauseTimer = null;
+const COMMIT_DELAY = 700;  // ms of no typing before auto-commit
+
+function setFeedback(text, cls) {
+  const fb = document.getElementById('input-feedback');
+  if (!fb) return;
+  fb.textContent = text;
+  fb.className = 'input-feedback ' + cls;
+  setTimeout(() => { fb.textContent = ''; fb.className = 'input-feedback'; }, 600);
+}
+
+function commitInput() {
+  if (!inputBuffer) return;
+  const typed = inputBuffer.toUpperCase();
+  // Find all threats whose answer is in the typed buffer
+  const matches = threats.filter(t => typed.includes(t.answer));
+  if (matches.length > 0) {
+    matches.forEach(t => {
+      threats.splice(threats.indexOf(t), 1);
+      totalNeutralized++;
+      stageNeutralized++;
+      // Track cipher stats
+      const stats = getCipherStats(t.cipher);
+      stats.correct++;
+      stats.total++;
+      if (stats.weak[t.answer]) {
+        stats.weak[t.answer] = Math.max(0, stats.weak[t.answer] - 1);
+        if (stats.weak[t.answer] === 0) delete stats.weak[t.answer];
+      }
+      combo++;
+      if (combo > maxCombo) maxCombo = combo;
+      const multiplier = Math.min(combo, 10);
+      const pts = 100 * multiplier;
+      score += pts;
+      stageScore += pts;
+      const color = CIPHER_COLORS[t.cipher] || t.glow;
+      spawnParticles(t.x, t.y, color, 18 + combo * 2);
+      spawnParticles(t.x, t.y, '#ffffff', 8);
+      playNeutralize();
+      triggerFlash('rgba(0,255,255,0.15)');
+      if (combo > 1) {
+        spawnComboText(t.x, t.y - 20, `×${combo} COMBO!`, combo > 4 ? '#ffff00' : '#ff00ff');
+        if (combo % 3 === 0) playComboUp();
+      } else {
+        spawnComboText(t.x, t.y - 20, `+${pts}`, color);
+      }
+    });
+    setFeedback(`✓ ×${matches.length}`, 'hit');
+    updateHUD();
+    checkStageComplete();
+  } else {
+    // Wrong — count as wrong attempts in cipher stats
+    setFeedback('? ?', 'miss');
+    // Light penalty: combo reset (single wrong letter resets combo)
+    combo = 0;
+    updateHUD();
+    // Track as wrong for the FIRST cipher in buffer
+    const firstLetter = typed[0];
+    const firstCipher = selectedCiphers[Math.floor(Math.random() * selectedCiphers.length)];
+    const stats = getCipherStats(firstCipher);
+    stats.wrong++;
+    stats.total++;
+    stats.weak[firstLetter] = (stats.weak[firstLetter] || 0) + 1;
+  }
+  inputBuffer = '';
+  document.getElementById('cipher-input').value = '';
+}
+
 function handleKeyDown(e) {
   if (e.key === 'F5' || e.metaKey || e.ctrlKey) return;
   initAudio();
-  // Spacebar or Enter = clear input (placeholder for "fire" if no threat matches)
-  if (e.key === ' ' || e.key === 'Enter') {
+  if (gameState !== STATES.PLAY) return;
+
+  // Enter or Space = commit immediately
+  if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
-    document.getElementById('cipher-input').value = '';
+    if (inputPauseTimer) clearTimeout(inputPauseTimer);
+    commitInput();
+    return;
+  }
+  // Backspace = remove last char
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    inputBuffer = inputBuffer.slice(0, -1);
+    document.getElementById('cipher-input').value = inputBuffer;
+    if (inputPauseTimer) clearTimeout(inputPauseTimer);
+    inputPauseTimer = setTimeout(commitInput, COMMIT_DELAY);
     return;
   }
   // Only A-Z letters
-  if (gameState !== STATES.PLAY) return;
   if (e.key.length !== 1) return;
   if (!/[a-zA-Z]/.test(e.key)) return;
-  const now = Date.now();
-  if (now - lastInputTime < 30) return;
-  lastInputTime = now;
-  neutralizeMatching(e.key);
+
+  e.preventDefault();
+  inputBuffer += e.key.toUpperCase();
+  // Cap buffer length
+  if (inputBuffer.length > 6) inputBuffer = inputBuffer.slice(-6);
+  document.getElementById('cipher-input').value = inputBuffer;
+
+  // Reset pause timer
+  if (inputPauseTimer) clearTimeout(inputPauseTimer);
+  inputPauseTimer = setTimeout(commitInput, COMMIT_DELAY);
 }
 
 window.addEventListener('keydown', handleKeyDown);
 canvas.addEventListener('click', () => {
-  // Click focuses the input field
   document.getElementById('cipher-input').focus();
 });
 
