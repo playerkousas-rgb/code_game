@@ -736,19 +736,39 @@ function encodeCipher(letter, type) {
 function drawMorse(ctx, letter, x, y, size) {
   const code = MORSE[letter] || '?';
   const symbols = code.split('');
-  let curX = x - (symbols.length * size * 0.4);
-  ctx.font = `900 ${Math.floor(size * 0.8)}px Courier New`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const totalWidth = symbols.length * size * 0.9;
+  let curX = x - totalWidth / 2;
+  const dotR = size * 0.18;
+  const dashW = size * 0.55;
+  const dashH = size * 0.22;
+
+  ctx.fillStyle = '#ffcc00';
+  ctx.shadowColor = '#ffcc00';
+  ctx.shadowBlur = 6;
+
   symbols.forEach(s => {
     if (s === '.') {
-      ctx.fillStyle = '#ffcc00';
-      ctx.fillText('●', curX, y);
+      // Dot — filled circle
+      ctx.beginPath();
+      ctx.arc(curX + dotR, y, dotR, 0, Math.PI * 2);
+      ctx.fill();
+      curX += size * 0.9;
     } else if (s === '-') {
-      ctx.fillStyle = '#ffcc00';
-      ctx.fillText('━', curX, y);
+      // Dash — rounded rectangle
+      ctx.beginPath();
+      ctx.moveTo(curX, y - dashH / 2);
+      ctx.lineTo(curX + dashW - 3, y - dashH / 2);
+      ctx.arcTo(curX + dashW, y - dashH / 2, curX + dashW, y, 2);
+      ctx.arcTo(curX + dashW, y + dashH / 2, curX + dashW - dashH, y + dashH / 2, 2);
+      ctx.lineTo(curX + dashH / 2, y + dashH / 2);
+      ctx.arcTo(curX, y + dashH / 2, curX, y, 2);
+      ctx.arcTo(curX, y - dashH / 2, curX + dashH / 2, y - dashH / 2, 2);
+      ctx.closePath();
+      ctx.fill();
+      curX += size * 0.9;
     }
-    curX += size * 0.8;
   });
+  ctx.shadowBlur = 0;
 }
 
 // Pre-load semaphore images
