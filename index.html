@@ -241,6 +241,88 @@
     box-shadow: 0 0 12px rgba(255, 0, 255, 0.4);
   }
 
+  /* === SPEED SLIDER === */
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(10, 20, 40, 0.6);
+    border: 1px solid #2a3556;
+    border-radius: 10px;
+    padding: 12px 20px;
+    margin: 0.8em auto;
+    max-width: 400px;
+    width: 90%;
+  }
+  .speed-label {
+    color: #888;
+    font-size: 0.75em;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .speed-value {
+    color: #ff9900;
+    font-size: 0.85em;
+    font-weight: 900;
+    min-width: 40px;
+    text-align: center;
+    text-shadow: 0 0 6px #ff9900;
+  }
+  input[type="range"].speed-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #00ff88, #ff9900, #ff0055);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"].speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(0,255,255,0.6);
+    cursor: pointer;
+  }
+  input[type="range"].speed-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(0,255,255,0.6);
+    border: none;
+    cursor: pointer;
+  }
+  .speed-presets {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    justify-content: center;
+  }
+  .speed-preset-btn {
+    background: transparent;
+    border: 1px solid #555;
+    color: #aaa;
+    padding: 3px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.65em;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .speed-preset-btn:hover {
+    border-color: #ff9900;
+    color: #ff9900;
+    background: rgba(255,153,0,0.1);
+  }
+
   /* === INPUT OVERLAY === */
   #input-overlay {
     position: fixed;
@@ -357,11 +439,42 @@
     <button class="preset-btn" onclick="selectPreset(['MORSE','PIGPEN','BRAILLE'])">★ Reflex Trio</button>
     <button class="preset-btn" onclick="selectPreset(['MORSE','SEMAPHORE','PIGPEN','BRAILLE','GRID','PHONET9'])">★ All Ciphers</button>
   </div>
+
+  <div class="speed-control">
+    <span class="speed-label">⚡ SPEED</span>
+    <input type="range" class="speed-slider" id="speedSlider" min="1" max="10" step="1" value="5">
+    <span class="speed-value" id="speedValue">5</span>
+  </div>
+  <div class="speed-presets">
+    <button class="speed-preset-btn" onclick="setSpeed(1)">🐌 休閒</button>
+    <button class="speed-preset-btn" onclick="setSpeed(3)">🚶 普通</button>
+    <button class="speed-preset-btn" onclick="setSpeed(5)">🏃 標準</button>
+    <button class="speed-preset-btn" onclick="setSpeed(8)">🔥 困難</button>
+    <button class="speed-preset-btn" onclick="setSpeed(10)">💀 地獄</button>
+  </div>
+
   <div class="divider"></div>
   <button class="btn" id="btn-start-game" style="color:#00ff88; border-color:#00ff88; text-shadow:0 0 8px #00ff88; box-shadow:0 0 15px rgba(0,255,136,0.3);">▶ START TRAINING</button>
   <div class="controls-hint" style="margin-top:1.5em;">
     <span>CLICK</span> any matching cipher to neutralize threat
   </div>
+</div>
+
+<!-- IN-GAME SPEED TOGGLE (outside screens so it's visible during gameplay) -->
+<div id="speed-toggle-wrap" style="position:fixed; bottom:10px; right:10px; z-index:30; pointer-events:all; display:none;">
+  <button id="btn-speed-toggle" style="background:rgba(0,5,20,0.9); border:1px solid #ff9900; color:#ff9900; padding:8px 16px; border-radius:8px; cursor:pointer; font-family:inherit; font-size:0.8em; letter-spacing:0.1em; text-shadow:0 0 6px #ff9900; box-shadow:0 0 12px rgba(255,153,0,0.3);">⚡ 速度: 5</button>
+</div>
+<div id="speed-overlay" style="position:fixed; bottom:50px; right:10px; z-index:31; pointer-events:all; background:rgba(0,5,20,0.95); border:1px solid #2a3556; border-radius:12px; padding:16px; display:none; flex-direction:column; align-items:center; gap:10px; box-shadow:0 0 20px rgba(255,153,0,0.2);">
+  <div style="color:#ff9900; font-size:0.8em; font-weight:900; letter-spacing:0.2em;">GAME SPEED</div>
+  <input type="range" class="speed-slider" id="speedSliderGame" min="1" max="10" step="1" value="5" style="width:200px;">
+  <div style="display:flex; gap:6px;">
+    <button class="speed-preset-btn" onclick="setSpeed(1)">🐌</button>
+    <button class="speed-preset-btn" onclick="setSpeed(3)">🚶</button>
+    <button class="speed-preset-btn" onclick="setSpeed(5)">🏃</button>
+    <button class="speed-preset-btn" onclick="setSpeed(8)">🔥</button>
+    <button class="speed-preset-btn" onclick="setSpeed(10)">💀</button>
+  </div>
+  <div class="speed-value" id="speedValueGame">5</div>
 </div>
 
 <!-- STAGE CLEAR SCREEN -->
@@ -508,13 +621,58 @@ const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const MORSE = {'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....','I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..'};
 
-const PIGPEN_SHAPES = {
-  'A':['L',null,null],'B':['R',null,null],'C':['R',null,'top'],'D':['L','top',null],'E':['R','top','bot'],
-  'F':['L','top','bot'],'G':['L','top','right'],'H':['L','left','right'],'I':['L','left',null],
-  'J':['R',null,'bot'],'K':['R','left',null],'L':['R','left','bot'],'M':['R','left','top'],'N':['R','top','bot'],
-  'O':['R','top','right'],'P':['R','right','bot'],'Q':['R','left','right'],'R':['R','left',null],
-  'S':['V',null,null],'T':['V','right',null],'U':['V','left',null],'V':['V','left','right'],
-  'W':['V','top',null],'X':['V','right','top'],'Y':['V','left','top'],'Z':['V','left','bot']
+// Precise Pigpen cipher paths (from code repo — SVG-based)
+const PIGPEN_PATHS = {
+  'A':'M35,10 L35,35 L10,35',
+  'B':'M10,10 L10,35 L35,35 L35,10',
+  'C':'M10,10 L10,35 L35,35',
+  'D':'M10,10 L35,10 L35,35 L10,35',
+  'E':'M10,10 L35,10 L35,35 L10,35 Z',
+  'F':'M35,10 L10,10 L10,35 L35,35',
+  'G':'M35,35 L35,10 L10,10',
+  'H':'M10,35 L10,10 L35,10 L35,35',
+  'I':'M10,35 L10,10 L35,10',
+  'J':['M35,10 L35,35 L10,35',true],
+  'K':['M10,10 L10,35 L35,35 L35,10',true],
+  'L':['M10,10 L10,35 L35,35',true],
+  'M':['M10,10 L35,10 L35,35 L10,35',true],
+  'N':['M10,10 L35,10 L35,35 L10,35 Z',true],
+  'O':['M35,10 L10,10 L10,35 L35,35',true],
+  'P':['M35,35 L35,10 L10,10',true],
+  'Q':['M10,35 L10,10 L35,10 L35,35',true],
+  'R':['M10,35 L10,10 L35,10',true],
+  'S':'M10,10 L22.5,22.5 L35,10',
+  'T':'M35,10 L22.5,22.5 L35,35',
+  'U':'M10,35 L22.5,22.5 L35,35',
+  'V':'M10,10 L22.5,22.5 L10,35',
+  'W':['M10,10 L22.5,22.5 L35,10',true,{x:22.5,y:15}],
+  'X':['M35,10 L22.5,22.5 L35,35',true,{x:30,y:22.5}],
+  'Y':['M10,35 L22.5,22.5 L35,35',true,{x:22.5,y:30}],
+  'Z':['M10,10 L22.5,22.5 L10,35',true,{x:15,y:22.5}]
+};
+
+// Semaphore flag angles (from code repo — precise positioning)
+const SEM_ANGLES = {
+  'A':[180,225],'B':[180,270],'C':[180,315],'D':[180,0],
+  'E':[0,45],'F':[0,90],'G':[0,135],
+  'H':[225,270],'I':[225,315],
+  'J':[90,0],
+  'K':[225,0],'L':[225,45],'M':[225,90],'N':[225,135],
+  'O':[270,315],'P':[270,0],'Q':[270,45],'R':[270,90],
+  'S':[270,135],
+  'T':[315,0],'U':[315,45],
+  'V':[0,90],
+  'W':[45,90],'X':[45,135],
+  'Y':[315,90],
+  'Z':[135,90]
+};
+
+// Semaphore image mapping (from code repo — doll style)
+const SEMAPHORE_IMG = {
+  'A':'a.png','B':'b.png','C':'c.png','D':'d.png','E':'e.png','F':'f.png','G':'g.png',
+  'H':'h.png','I':'i.png','J':'j.png','K':'k.png','L':'l.png','M':'m.png','N':'n.png',
+  'O':'o.png','P':'p.png','Q':'q.png','R':'r.png','S':'s.png','T':'t.png','U':'u.png',
+  'V':'v.png','W':'w.png','X':'x.png','Y':'y.png','Z':'z.png'
 };
 
 const BRAILLE_DOTS = {'A':[1],'B':[1,2],'C':[1,4],'D':[1,4,5],'E':[1,5],'F':[1,2,4],'G':[1,2,4,5],'H':[1,2,5],'I':[2,4],'J':[2,4,5],'K':[1,3],'L':[1,2,3],'M':[1,3,4],'N':[1,3,4,5],'O':[1,3,5],'P':[1,2,3,4],'Q':[1,2,3,4,5],'R':[1,2,3,5],'S':[2,3,4],'T':[2,3,4,5],'U':[1,3,6],'V':[1,2,3,6],'W':[2,4,5,6],'X':[1,3,4,6],'Y':[1,3,4,5,6],'Z':[1,3,5,6]};
@@ -529,14 +687,35 @@ function encodeGrid(letter) {
 
 const PHONE_T9 = {'A':'2-1','B':'2-2','C':'2-3','D':'3-1','E':'3-2','F':'3-3','G':'4-1','H':'4-2','I':'4-3','J':'5-1','K':'5-2','L':'5-3','M':'6-1','N':'6-2','O':'6-3','P':'7-1','Q':'7-2','R':'7-3','S':'7-4','T':'8-1','U':'8-2','V':'8-3','W':'9-1','X':'9-2','Y':'9-3','Z':'9-4'};
 
-const SEMAPHORE_ANGLES = {'A':[180,225],'B':[180,270],'C':[180,315],'D':[180,0],'E':[0,45],'F':[0,90],'G':[0,135],'H':[225,270],'I':[225,315],'J':[90,0],'K':[225,0],'L':[225,45],'M':[225,90],'N':[225,135],'O':[270,315],'P':[270,0],'Q':[270,45],'R':[270,90],'S':[270,135],'T':[315,0],'U':[315,45],'V':[0,90],'W':[45,90],'X':[45,135],'Y':[315,90],'Z':[135,90]};
-
 const CIPHER_LIST = ['MORSE','PIGPEN','BRAILLE','GRID','PHONET9','SEMAPHORE'];
 const CIPHER_LABELS = {MORSE:'MORSE',PIGPEN:'PIGPEN',BRAILLE:'BRAILLE',GRID:'GRID',PHONET9:'PHONE T9',SEMAPHORE:'SEMAPHORE'};
 const CIPHER_COLORS = {MORSE:'#ffcc00',PIGPEN:'#ff9900',BRAILLE:'#00ff88',GRID:'#ff00ff',PHONET9:'#00d2ff',SEMAPHORE:'#ff66cc'};
 
 let selectedCiphers = ['MORSE'];  // default = Morse only (start focused)
 let cipherStats = {};  // {cipher: {correct, wrong, weakLetters: {letter: count}}}
+let gameSpeed = 5;  // 1-10 scale, default 5
+
+function getSpeed() { return gameSpeed; }
+
+function setSpeed(val) {
+  gameSpeed = Math.max(1, Math.min(10, val));
+  // Update all speed UI elements
+  const s1 = document.getElementById('speedSlider');
+  const s2 = document.getElementById('speedSliderGame');
+  const v1 = document.getElementById('speedValue');
+  const v2 = document.getElementById('speedValueGame');
+  const tb = document.getElementById('btn-speed-toggle');
+  if (s1) s1.value = gameSpeed;
+  if (s2) s2.value = gameSpeed;
+  if (v1) v1.textContent = gameSpeed;
+  if (v2) v2.textContent = gameSpeed;
+  if (tb) tb.textContent = `⚡ 速度: ${gameSpeed}`;
+}
+
+function getSpeedMultiplier() {
+  // Speed 1 = 0.5x, Speed 5 = 1.0x, Speed 10 = 2.5x
+  return 0.5 + (gameSpeed - 1) * 0.222;
+}
 
 function getCipherStats(cipher) {
   if (!cipherStats[cipher]) cipherStats[cipher] = {correct:0, wrong:0, weak:{}, total:0};
@@ -572,32 +751,59 @@ function drawMorse(ctx, letter, x, y, size) {
   });
 }
 
+// Pre-load semaphore images
+const semaphoreImages = {};
+const semaphoreImagesLoaded = new Promise((resolve) => {
+  let loaded = 0;
+  const total = Object.values(SEMAPHORE_IMG).length;
+  if (total === 0) { resolve(); return; }
+  Object.entries(SEMAPHORE_IMG).forEach(([letter, filename]) => {
+    const img = new Image();
+    img.onload = () => { loaded++; if (loaded >= total) resolve(); };
+    img.onerror = () => { loaded++; if (loaded >= total) resolve(); };
+    img.src = 'images/' + filename;
+    semaphoreImages[letter] = img;
+  });
+});
+
 function drawPigpen(ctx, letter, x, y, size) {
-  const shape = PIGPEN_SHAPES[letter];
-  if (!shape) return;
-  const r = size * 0.7;
-  ctx.strokeStyle = '#ff9900'; ctx.lineWidth = 2.5;
-  ctx.shadowColor = '#ff9900'; ctx.shadowBlur = 6;
-  // box always
-  ctx.beginPath(); ctx.rect(x - r, y - r, r*2, r*2); ctx.stroke();
-  if (shape[0] === 'L') {  // L-shape
-    ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x, y); ctx.stroke();
-  } else if (shape[0] === 'R') {  // R-shape (∩)
-    ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.stroke();
-  } else if (shape[0] === 'V') {  // V-shape (∨)
-    ctx.beginPath(); ctx.moveTo(x - r, y - r); ctx.lineTo(x, y); ctx.lineTo(x + r, y - r); ctx.stroke();
+  const data = PIGPEN_PATHS[letter];
+  if (!data) return;
+  const color = '#ff9900';
+  const scale = size / 45;
+  const path = Array.isArray(data) ? data[0] : data;
+  const hasDot = Array.isArray(data) && data[1];
+  const dotPos = (Array.isArray(data) && data[2]) || {x: 22.5, y: 22.5};
+
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 6;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3 * scale;
+  ctx.lineCap = 'round';
+
+  // Draw path
+  ctx.beginPath();
+  const commands = path.split(/(?=[MLZ])/);
+  commands.forEach(cmd => {
+    cmd = cmd.trim();
+    if (!cmd) return;
+    const type = cmd[0];
+    const coords = cmd.slice(1).split(',').map(Number);
+    if (type === 'M') ctx.moveTo(coords[0] * scale + (x - 22.5 * scale), coords[1] * scale + (y - 22.5 * scale));
+    else if (type === 'L') ctx.lineTo(coords[0] * scale + (x - 22.5 * scale), coords[1] * scale + (y - 22.5 * scale));
+    else if (type === 'Z') ctx.closePath();
+  });
+  ctx.stroke();
+
+  // Draw dot if needed
+  if (hasDot) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(dotPos.x * scale + (x - 22.5 * scale), dotPos.y * scale + (y - 22.5 * scale), 3 * scale, 0, Math.PI * 2);
+    ctx.fill();
   }
-  // dots
-  ctx.fillStyle = '#ff9900';
-  if (shape[1] === 'top') { ctx.beginPath(); ctx.arc(x, y - r, 3, 0, Math.PI*2); ctx.fill(); }
-  if (shape[1] === 'bot') { ctx.beginPath(); ctx.arc(x, y + r, 3, 0, Math.PI*2); ctx.fill(); }
-  if (shape[1] === 'left') { ctx.beginPath(); ctx.arc(x - r, y, 3, 0, Math.PI*2); ctx.fill(); }
-  if (shape[1] === 'right') { ctx.beginPath(); ctx.arc(x + r, y, 3, 0, Math.PI*2); ctx.fill(); }
-  if (shape[2] === 'top') { ctx.beginPath(); ctx.arc(x, y - r, 3, 0, Math.PI*2); ctx.fill(); }
-  if (shape[2] === 'bot') { ctx.beginPath(); ctx.arc(x, y + r, 3, 0, Math.PI*2); ctx.fill(); }
-  if (shape[2] === 'left') { ctx.beginPath(); ctx.arc(x - r, y, 3, 0, Math.PI*2); ctx.fill(); }
-  if (shape[2] === 'right') { ctx.beginPath(); ctx.arc(x + r, y, 3, 0, Math.PI*2); ctx.fill(); }
-  ctx.shadowBlur = 0;
+  ctx.restore();
 }
 
 function drawBraille(ctx, letter, x, y, size) {
@@ -649,26 +855,37 @@ function drawPhoneT9(ctx, letter, x, y, size) {
 }
 
 function drawSemaphore(ctx, letter, x, y, size) {
-  const angles = SEMAPHORE_ANGLES[letter];
+  const angles = SEM_ANGLES[letter];
   if (!angles) return;
   const r = size * 0.9;
-  // person body
-  ctx.strokeStyle = '#ff66cc'; ctx.lineWidth = 2.5;
-  ctx.shadowColor = '#ff66cc'; ctx.shadowBlur = 4;
-  ctx.beginPath(); ctx.arc(x, y - r*0.6, r*0.2, 0, Math.PI*2); ctx.stroke();  // head
-  ctx.beginPath(); ctx.moveTo(x, y - r*0.4); ctx.lineTo(x, y + r*0.3); ctx.stroke();  // body
-  // flags (lines from shoulder)
+  const color = '#ff66cc';
+  const altColor = '#00d2ff';
+  // person body (stick figure style from code repo)
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+  ctx.shadowColor = color; ctx.shadowBlur = 4;
+  // Head
+  ctx.beginPath(); ctx.arc(x, y - r*0.6, r*0.2, 0, Math.PI*2); ctx.stroke();
+  // Body
+  ctx.beginPath(); ctx.moveTo(x, y - r*0.4); ctx.lineTo(x, y + r*0.3); ctx.stroke();
+  // Legs
+  ctx.beginPath(); ctx.moveTo(x, y + r*0.3); ctx.lineTo(x - r*0.3, y + r*0.7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y + r*0.3); ctx.lineTo(x + r*0.3, y + r*0.7); ctx.stroke();
+  // Arms (flags from shoulder)
   angles.forEach((ang, i) => {
     const rad = (ang - 90) * Math.PI / 180;
     const fx = x + Math.cos(rad) * r;
-    const fy = y - r*0.3 + Math.sin(rad) * r;
-    ctx.strokeStyle = i === 0 ? '#ff66cc' : '#00d2ff';
+    const fy = (y - r*0.3) + Math.sin(rad) * r;
+    ctx.strokeStyle = i === 0 ? color : altColor;
     ctx.lineWidth = 3;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 6;
     ctx.beginPath(); ctx.moveTo(x, y - r*0.3); ctx.lineTo(fx, fy); ctx.stroke();
-    ctx.fillStyle = i === 0 ? '#ff66cc' : '#00d2ff';
+    ctx.fillStyle = ctx.strokeStyle;
     ctx.beginPath(); ctx.arc(fx, fy, 3, 0, Math.PI*2); ctx.fill();
   });
   ctx.shadowBlur = 0;
+  ctx.restore();
 }
 
 function drawCipherSymbol(ctx, cipher, letter, x, y, size) {
@@ -951,20 +1168,21 @@ function createThreat(stage) {
   const x = 60 + Math.random() * (W - 120);
   const cipher = pickCipher();
   const letter = pickWeightedLetter();
+  const speedMult = getSpeedMultiplier();
   return {
     x, y: -60,
     type, size,
-    speed: cfg.speed * (0.8 + Math.random() * 0.4),
+    speed: cfg.speed * speedMult * (0.8 + Math.random() * 0.4),
     fill: col.fill, stroke: col.stroke, glow: col.glow,
     rotation: 0,
-    rotSpeed: (Math.random() - 0.5) * 2,
-    label: letter,  // now shows the letter they need to type
-    cipher: cipher,  // cipher type
-    answer: letter,  // the letter they need to type to neutralize
+    rotSpeed: (Math.random() - 0.5) * 2 * speedMult,
+    label: letter,
+    cipher: cipher,
+    answer: letter,
     pulseOffset: Math.random() * Math.PI * 2,
     alive: true,
     wobble: Math.random() * Math.PI * 2,
-    wobbleSpeed: 0.5 + Math.random() * 1.5,
+    wobbleSpeed: (0.5 + Math.random() * 1.5) * speedMult,
     wobbleAmp: 10 + Math.random() * 20,
   };
 }
@@ -1305,6 +1523,10 @@ function hideAllScreens() {
   document.getElementById('hud-stage').classList.add('hidden');
   document.getElementById('input-overlay').classList.add('hidden');
   document.getElementById('screen-cipher-select').classList.add('hidden');
+  const stw = document.getElementById('speed-toggle-wrap');
+  if (stw) stw.style.display = 'none';
+  const so = document.getElementById('speed-overlay');
+  if (so) so.style.display = 'none';
 }
 
 function showGame() {
@@ -1312,6 +1534,8 @@ function showGame() {
   document.getElementById('hud').classList.remove('hidden');
   document.getElementById('hud-stage').classList.remove('hidden');
   document.getElementById('input-overlay').classList.remove('hidden');
+  const stw = document.getElementById('speed-toggle-wrap');
+  if (stw) stw.style.display = 'block';
   gameState = STATES.PLAY;
   setTimeout(() => document.getElementById('cipher-input').focus(), 50);
 }
@@ -1538,6 +1762,37 @@ document.getElementById('btn-next-stage').addEventListener('click', () => { init
 document.getElementById('btn-restart').addEventListener('click', () => { initAudio(); startGame(); });
 document.getElementById('btn-play-again').addEventListener('click', () => { initAudio(); startGame(); });
 
+// Speed slider listeners
+const speedSlider = document.getElementById('speedSlider');
+if (speedSlider) {
+  speedSlider.addEventListener('input', () => setSpeed(parseInt(speedSlider.value)));
+}
+const speedSliderGame = document.getElementById('speedSliderGame');
+if (speedSliderGame) {
+  speedSliderGame.addEventListener('input', () => setSpeed(parseInt(speedSliderGame.value)));
+}
+
+// Speed toggle button (in-game)
+const speedToggle = document.getElementById('btn-speed-toggle');
+const speedOverlay = document.getElementById('speed-overlay');
+const speedToggleWrap = document.getElementById('speed-toggle-wrap');
+if (speedToggle && speedOverlay) {
+  speedToggle.addEventListener('click', () => {
+    speedOverlay.style.display = speedOverlay.style.display === 'flex' ? 'none' : 'flex';
+  });
+}
+// Click outside speed overlay to close it
+document.addEventListener('click', (e) => {
+  if (speedOverlay && speedOverlay.style.display === 'flex' &&
+      !speedOverlay.contains(e.target) &&
+      e.target !== speedToggle) {
+    speedOverlay.style.display = 'none';
+  }
+});
+
+// Initialize speed display
+setSpeed(5);
+
 // ============================================================
 // MAIN LOOP
 // ============================================================
@@ -1584,12 +1839,13 @@ function gameLoop(ts) {
   if (gameState === STATES.PLAY) {
     // Spawn threats
     const cfg = STAGES[currentStage];
+    const speedMult = getSpeedMultiplier();
     if (spawnedCount < cfg.threatCount) {
       spawnTimer -= dt;
       if (spawnTimer <= 0) {
         threats.push(createThreat(currentStage));
         spawnedCount++;
-        spawnTimer = cfg.spawnInterval * (0.8 + Math.random() * 0.4);
+        spawnTimer = cfg.spawnInterval * (0.8 + Math.random() * 0.4) / speedMult;
       }
     }
 
