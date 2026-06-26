@@ -31,6 +31,15 @@
     z-index: 20;
     background: rgba(0,5,20,0.92);
   }
+  #screen-cipher-select {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding: 10px 0 30px 0;
+    align-content: flex-start;
+  }
+  #screen-cipher-select > * {
+    flex-shrink: 0;
+  }
   .screen.hidden { display: none; }
   .neon-title {
     font-size: clamp(2rem, 6vw, 4.5rem);
@@ -182,13 +191,13 @@
     gap: 12px;
     max-width: 720px;
     width: 90%;
-    margin: 1em 0;
+    margin: 0.5em 0;
   }
   .cipher-toggle {
     background: rgba(10, 20, 40, 0.6);
     border: 2px solid #2a3556;
     border-radius: 10px;
-    padding: 16px 12px;
+    padding: 14px 10px;
     cursor: pointer;
     transition: all 0.2s;
     text-align: center;
@@ -206,12 +215,12 @@
     color: #ffffff;
     font-weight: 900;
     letter-spacing: 0.15em;
-    font-size: 0.95em;
-    margin-bottom: 6px;
+    font-size: 0.9em;
+    margin-bottom: 4px;
   }
   .cipher-toggle-desc {
     color: #888;
-    font-size: 0.7em;
+    font-size: 0.65em;
     letter-spacing: 0.05em;
   }
   .cipher-toggle.on .cipher-toggle-desc {
@@ -222,7 +231,7 @@
     gap: 8px;
     flex-wrap: wrap;
     justify-content: center;
-    margin-bottom: 1em;
+    margin-bottom: 0.5em;
   }
   .preset-btn {
     background: transparent;
@@ -232,7 +241,7 @@
     border-radius: 6px;
     cursor: pointer;
     font-family: inherit;
-    font-size: 0.75em;
+    font-size: 0.7em;
     letter-spacing: 0.1em;
     transition: all 0.2s;
   }
@@ -241,8 +250,39 @@
     box-shadow: 0 0 12px rgba(255, 0, 255, 0.4);
   }
 
-  /* === SPEED SLIDER === */
-  .speed-control {
+  /* === COLLAPSIBLE SETTINGS === */
+  .settings-toggle-btn {
+    background: rgba(10, 20, 40, 0.6);
+    border: 1px solid #2a3556;
+    color: #aaa;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.75em;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin: 0.5em auto;
+    max-width: 300px;
+    width: 80%;
+    transition: all 0.2s;
+    display: block;
+  }
+  .settings-toggle-btn:hover {
+    border-color: #ff9900;
+    color: #ff9900;
+  }
+  .settings-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .settings-body.open {
+    max-height: 600px;
+  }
+
+  /* === SPEED & SETTINGS SLIDER === */
+  .speed-control, .settings-control {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -250,11 +290,11 @@
     border: 1px solid #2a3556;
     border-radius: 10px;
     padding: 12px 20px;
-    margin: 0.8em auto;
-    max-width: 400px;
+    margin: 0.6em auto;
+    max-width: 440px;
     width: 90%;
   }
-  .speed-label {
+  .settings-label {
     color: #888;
     font-size: 0.75em;
     font-weight: 700;
@@ -262,25 +302,25 @@
     text-transform: uppercase;
     white-space: nowrap;
   }
-  .speed-value {
-    color: #ff9900;
+  .settings-value {
     font-size: 0.85em;
     font-weight: 900;
-    min-width: 40px;
+    min-width: 50px;
     text-align: center;
-    text-shadow: 0 0 6px #ff9900;
   }
-  input[type="range"].speed-slider {
+  .settings-value.lives-val { color: #00ff88; text-shadow: 0 0 6px #00ff88; }
+  .settings-value.time-val { color: #ff6644; text-shadow: 0 0 6px #ff6644; }
+  .settings-value.speed-val { color: #ff9900; text-shadow: 0 0 6px #ff9900; }
+  input[type="range"].settings-slider {
     -webkit-appearance: none;
     appearance: none;
     flex: 1;
     height: 6px;
     border-radius: 3px;
-    background: linear-gradient(90deg, #00ff88, #ff9900, #ff0055);
     outline: none;
     cursor: pointer;
   }
-  input[type="range"].speed-slider::-webkit-slider-thumb {
+  input[type="range"].settings-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 20px;
@@ -290,7 +330,7 @@
     box-shadow: 0 0 10px rgba(0,255,255,0.6);
     cursor: pointer;
   }
-  input[type="range"].speed-slider::-moz-range-thumb {
+  input[type="range"].settings-slider::-moz-range-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -299,13 +339,17 @@
     border: none;
     cursor: pointer;
   }
-  .speed-presets {
+  .speed-slider { background: linear-gradient(90deg, #00ff88, #ff9900, #ff0055); }
+  .lives-slider { background: linear-gradient(90deg, #ff0055, #ff6644, #00ff88, #00ff88); }
+  .time-slider { background: linear-gradient(90deg, #00ff88, #ff9900, #ff0055); }
+
+  .settings-presets {
     display: flex;
     gap: 6px;
     margin-top: 6px;
     justify-content: center;
   }
-  .speed-preset-btn {
+  .settings-preset-btn {
     background: transparent;
     border: 1px solid #555;
     color: #aaa;
@@ -317,7 +361,7 @@
     letter-spacing: 0.05em;
     transition: all 0.15s;
   }
-  .speed-preset-btn:hover {
+  .settings-preset-btn:hover {
     border-color: #ff9900;
     color: #ff9900;
     background: rgba(255,153,0,0.1);
@@ -440,17 +484,45 @@
     <button class="preset-btn" onclick="selectPreset(['MORSE','SEMAPHORE','PIGPEN','BRAILLE','GRID','PHONET9'])">★ All Ciphers</button>
   </div>
 
-  <div class="speed-control">
-    <span class="speed-label">⚡ SPEED</span>
-    <input type="range" class="speed-slider" id="speedSlider" min="1" max="10" step="1" value="5">
-    <span class="speed-value" id="speedValue">5</span>
-  </div>
-  <div class="speed-presets">
-    <button class="speed-preset-btn" onclick="setSpeed(1)">🐌 休閒</button>
-    <button class="speed-preset-btn" onclick="setSpeed(3)">🚶 普通</button>
-    <button class="speed-preset-btn" onclick="setSpeed(5)">🏃 標準</button>
-    <button class="speed-preset-btn" onclick="setSpeed(8)">🔥 困難</button>
-    <button class="speed-preset-btn" onclick="setSpeed(10)">💀 地獄</button>
+  <!-- Collapsible settings panel -->
+  <button class="settings-toggle-btn" id="btn-toggle-settings" onclick="toggleSettings()">⚙ 遊戲設定 (速度 / 血量 / 限時) ▾</button>
+  <div id="settings-body" class="settings-body">
+    <div class="settings-control">
+      <span class="settings-label">⚡ 速度</span>
+      <input type="range" class="settings-slider speed-slider" id="speedSlider" min="1" max="10" step="1" value="5">
+      <span class="settings-value speed-val" id="speedValue">5</span>
+    </div>
+    <div class="settings-presets">
+      <button class="settings-preset-btn" onclick="setSpeed(1)">🐌</button>
+      <button class="settings-preset-btn" onclick="setSpeed(3)">🚶</button>
+      <button class="settings-preset-btn" onclick="setSpeed(5)">🏃</button>
+      <button class="settings-preset-btn" onclick="setSpeed(8)">🔥</button>
+      <button class="settings-preset-btn" onclick="setSpeed(10)">💀</button>
+    </div>
+    <div class="settings-control">
+      <span class="settings-label">🛡 血量</span>
+      <input type="range" class="settings-slider lives-slider" id="livesSlider" min="0" max="10" step="1" value="3">
+      <span class="settings-value lives-val" id="livesValue">3</span>
+    </div>
+    <div class="settings-presets">
+      <button class="settings-preset-btn" onclick="setLives(0)">♾</button>
+      <button class="settings-preset-btn" onclick="setLives(3)">3</button>
+      <button class="settings-preset-btn" onclick="setLives(5)">5</button>
+      <button class="settings-preset-btn" onclick="setLives(10)">10</button>
+      <button class="settings-preset-btn" onclick="setLives(1)">1</button>
+    </div>
+    <div class="settings-control">
+      <span class="settings-label">⏱ 限時</span>
+      <input type="range" class="settings-slider time-slider" id="timeSlider" min="0" max="120" step="5" value="0">
+      <span class="settings-value time-val" id="timeValue">∞</span>
+    </div>
+    <div class="settings-presets">
+      <button class="settings-preset-btn" onclick="setTime(0)">∞</button>
+      <button class="settings-preset-btn" onclick="setTime(30)">30s</button>
+      <button class="settings-preset-btn" onclick="setTime(60)">60s</button>
+      <button class="settings-preset-btn" onclick="setTime(90)">90s</button>
+      <button class="settings-preset-btn" onclick="setTime(120)">120s</button>
+    </div>
   </div>
 
   <div class="divider"></div>
@@ -460,21 +532,35 @@
   </div>
 </div>
 
-<!-- IN-GAME SPEED TOGGLE (outside screens so it's visible during gameplay) -->
-<div id="speed-toggle-wrap" style="position:fixed; bottom:10px; right:10px; z-index:30; pointer-events:all; display:none;">
-  <button id="btn-speed-toggle" style="background:rgba(0,5,20,0.9); border:1px solid #ff9900; color:#ff9900; padding:8px 16px; border-radius:8px; cursor:pointer; font-family:inherit; font-size:0.8em; letter-spacing:0.1em; text-shadow:0 0 6px #ff9900; box-shadow:0 0 12px rgba(255,153,0,0.3);">⚡ 速度: 5</button>
+<!-- IN-GAME SETTINGS TOGGLE (outside screens so it's visible during gameplay) -->
+<div id="settings-toggle-wrap" style="position:fixed; bottom:10px; right:10px; z-index:30; pointer-events:all; display:none;">
+  <button id="btn-settings-toggle" style="background:rgba(0,5,20,0.9); border:1px solid #ff9900; color:#ff9900; padding:8px 16px; border-radius:8px; cursor:pointer; font-family:inherit; font-size:0.8em; letter-spacing:0.1em; text-shadow:0 0 6px #ff9900; box-shadow:0 0 12px rgba(255,153,0,0.3);">⚙ 設定</button>
 </div>
-<div id="speed-overlay" style="position:fixed; bottom:50px; right:10px; z-index:31; pointer-events:all; background:rgba(0,5,20,0.95); border:1px solid #2a3556; border-radius:12px; padding:16px; display:none; flex-direction:column; align-items:center; gap:10px; box-shadow:0 0 20px rgba(255,153,0,0.2);">
-  <div style="color:#ff9900; font-size:0.8em; font-weight:900; letter-spacing:0.2em;">GAME SPEED</div>
-  <input type="range" class="speed-slider" id="speedSliderGame" min="1" max="10" step="1" value="5" style="width:200px;">
-  <div style="display:flex; gap:6px;">
-    <button class="speed-preset-btn" onclick="setSpeed(1)">🐌</button>
-    <button class="speed-preset-btn" onclick="setSpeed(3)">🚶</button>
-    <button class="speed-preset-btn" onclick="setSpeed(5)">🏃</button>
-    <button class="speed-preset-btn" onclick="setSpeed(8)">🔥</button>
-    <button class="speed-preset-btn" onclick="setSpeed(10)">💀</button>
+<div id="settings-overlay" style="position:fixed; bottom:50px; right:10px; z-index:31; pointer-events:all; background:rgba(0,5,20,0.95); border:1px solid #2a3556; border-radius:12px; padding:16px; display:none; flex-direction:column; align-items:center; gap:8px; box-shadow:0 0 20px rgba(255,153,0,0.2);">
+  <!-- Speed -->
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span style="color:#888;font-size:0.7em;font-weight:700;letter-spacing:0.1em;">⚡ 速度</span>
+    <input type="range" class="settings-slider speed-slider" id="speedSliderGame" min="1" max="10" step="1" value="5" style="width:160px;">
+    <span class="settings-value speed-val" id="speedValueGame" style="min-width:30px;">5</span>
   </div>
-  <div class="speed-value" id="speedValueGame">5</div>
+  <!-- Lives -->
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span style="color:#888;font-size:0.7em;font-weight:700;letter-spacing:0.1em;">🛡 血量</span>
+    <input type="range" class="settings-slider lives-slider" id="livesSliderGame" min="0" max="10" step="1" value="3" style="width:160px;">
+    <span class="settings-value lives-val" id="livesValueGame" style="min-width:30px;">3</span>
+  </div>
+  <!-- Time limit -->
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span style="color:#888;font-size:0.7em;font-weight:700;letter-spacing:0.1em;">⏱ 限時</span>
+    <input type="range" class="settings-slider time-slider" id="timeSliderGame" min="0" max="120" step="5" value="0" style="width:160px;">
+    <span class="settings-value time-val" id="timeValueGame" style="min-width:50px;">∞</span>
+  </div>
+  <div style="color:#555;font-size:0.6em;letter-spacing:0.1em;margin-top:4px;">調整將即時生效（除血量外）</div>
+</div>
+
+<!-- IN-GAME TIMER DISPLAY -->
+<div id="timer-display" style="position:fixed; top:10px; right:20px; z-index:32; pointer-events:none; display:none;">
+  <span id="timer-value" style="color:#ff6644; font-size:1.4em; font-weight:900; font-family:'Courier New',monospace; text-shadow:0 0 10px #ff6644;">--</span>
 </div>
 
 <!-- STAGE CLEAR SCREEN -->
@@ -694,22 +780,47 @@ const CIPHER_COLORS = {MORSE:'#ffcc00',PIGPEN:'#ff9900',BRAILLE:'#00ff88',GRID:'
 let selectedCiphers = ['MORSE'];  // default = Morse only (start focused)
 let cipherStats = {};  // {cipher: {correct, wrong, weakLetters: {letter: count}}}
 let gameSpeed = 5;  // 1-10 scale, default 5
+let gameLives = 3;  // 0 = infinite, 1-10 = lives
+let gameTimeLimit = 0;  // 0 = no limit, otherwise seconds
 
 function getSpeed() { return gameSpeed; }
 
 function setSpeed(val) {
   gameSpeed = Math.max(1, Math.min(10, val));
-  // Update all speed UI elements
   const s1 = document.getElementById('speedSlider');
   const s2 = document.getElementById('speedSliderGame');
   const v1 = document.getElementById('speedValue');
   const v2 = document.getElementById('speedValueGame');
-  const tb = document.getElementById('btn-speed-toggle');
   if (s1) s1.value = gameSpeed;
   if (s2) s2.value = gameSpeed;
   if (v1) v1.textContent = gameSpeed;
   if (v2) v2.textContent = gameSpeed;
-  if (tb) tb.textContent = `⚡ 速度: ${gameSpeed}`;
+}
+
+function setLives(val) {
+  gameLives = Math.max(0, Math.min(10, val));
+  const s1 = document.getElementById('livesSlider');
+  const s2 = document.getElementById('livesSliderGame');
+  const v1 = document.getElementById('livesValue');
+  const v2 = document.getElementById('livesValueGame');
+  const display = gameLives === 0 ? '∞ 無限' : gameLives.toString();
+  if (s1) s1.value = gameLives;
+  if (s2) s2.value = gameLives;
+  if (v1) v1.textContent = display;
+  if (v2) v2.textContent = display;
+}
+
+function setTime(val) {
+  gameTimeLimit = Math.max(0, Math.min(120, val));
+  const s1 = document.getElementById('timeSlider');
+  const s2 = document.getElementById('timeSliderGame');
+  const v1 = document.getElementById('timeValue');
+  const v2 = document.getElementById('timeValueGame');
+  const display = gameTimeLimit === 0 ? '∞ 不限' : gameTimeLimit + 's';
+  if (s1) s1.value = gameTimeLimit;
+  if (s2) s2.value = gameTimeLimit;
+  if (v1) v1.textContent = display;
+  if (v2) v2.textContent = display;
 }
 
 function getSpeedMultiplier() {
@@ -976,6 +1087,11 @@ function selectPreset(arr) {
   updateCipherSelectionUI();
 }
 
+function toggleSettings() {
+  const body = document.getElementById('settings-body');
+  if (body) body.classList.toggle('open');
+}
+
 function startWithSelectedCiphers() {
   if (selectedCiphers.length === 0) {
     alert('請至少選一個密碼!');
@@ -1051,6 +1167,8 @@ let stageConfig = null;
 let gridLines = [];
 let pulseTime = 0;
 let comboDisplayTimer = 0;
+let timeRemaining = 0;  // countdown timer in seconds
+let timerAccum = 0;  // accumulator for fractional seconds
 
 // ============================================================
 // MATRIX CODE RAIN
@@ -1481,7 +1599,9 @@ function checkStageComplete() {
 // DAMAGE
 // ============================================================
 function takeDamage(t) {
-  lives--;
+  if (gameLives > 0) {
+    lives--;
+  }
   combo = 0;
   shakeAmount = 12;
   shakeTimer = 0.5;
@@ -1499,7 +1619,7 @@ function takeDamage(t) {
   }
 
   updateHUD();
-  if (lives <= 0) {
+  if (lives <= 0 && gameLives > 0) {
     setTimeout(() => showGameOver(), 400);
   }
 }
@@ -1521,14 +1641,37 @@ function updateHUD() {
 
   const shieldsEl = document.getElementById('hud-shields');
   shieldsEl.innerHTML = '';
-  for (let i = 0; i < 3; i++) {
+  const displayLives = gameLives === 0 ? Math.min(lives, 10) : lives;
+  const maxShields = gameLives === 0 ? 3 : Math.min(gameLives, 10);
+  for (let i = 0; i < maxShields; i++) {
     const s = document.createElement('span');
-    s.className = 'shield-icon' + (i >= lives ? ' dead' : '');
+    s.className = 'shield-icon' + (i >= displayLives ? ' dead' : '');
     s.textContent = '🛡';
     shieldsEl.appendChild(s);
   }
 
   document.getElementById('hud-stage').textContent = `STAGE ${currentStage+1} / ${STAGES.length}`;
+
+  // Timer display
+  if (gameTimeLimit > 0) {
+    const timerEl = document.getElementById('timer-value');
+    if (timerEl) {
+      const mins = Math.floor(timeRemaining / 60);
+      const secs = timeRemaining % 60;
+      const display = mins > 0 ? `${mins}:${secs.toString().padStart(2,'0')}` : `${secs}s`;
+      timerEl.textContent = display;
+      if (timeRemaining <= 10) {
+        timerEl.style.color = '#ff0055';
+        timerEl.style.textShadow = '0 0 10px #ff0055';
+      } else if (timeRemaining <= 30) {
+        timerEl.style.color = '#ff9900';
+        timerEl.style.textShadow = '0 0 10px #ff9900';
+      } else {
+        timerEl.style.color = '#ff6644';
+        timerEl.style.textShadow = '0 0 10px #ff6644';
+      }
+    }
+  }
 }
 
 // ============================================================
@@ -1543,10 +1686,12 @@ function hideAllScreens() {
   document.getElementById('hud-stage').classList.add('hidden');
   document.getElementById('input-overlay').classList.add('hidden');
   document.getElementById('screen-cipher-select').classList.add('hidden');
-  const stw = document.getElementById('speed-toggle-wrap');
+  const stw = document.getElementById('settings-toggle-wrap');
   if (stw) stw.style.display = 'none';
-  const so = document.getElementById('speed-overlay');
+  const so = document.getElementById('settings-overlay');
   if (so) so.style.display = 'none';
+  const td = document.getElementById('timer-display');
+  if (td) td.style.display = 'none';
 }
 
 function showGame() {
@@ -1554,8 +1699,10 @@ function showGame() {
   document.getElementById('hud').classList.remove('hidden');
   document.getElementById('hud-stage').classList.remove('hidden');
   document.getElementById('input-overlay').classList.remove('hidden');
-  const stw = document.getElementById('speed-toggle-wrap');
+  const stw = document.getElementById('settings-toggle-wrap');
   if (stw) stw.style.display = 'block';
+  const td = document.getElementById('timer-display');
+  if (td) td.style.display = gameTimeLimit > 0 ? 'block' : 'none';
   gameState = STATES.PLAY;
   setTimeout(() => document.getElementById('cipher-input').focus(), 50);
 }
@@ -1578,7 +1725,22 @@ function showGameOver() {
   gameState = STATES.GAME_OVER;
   playGameOver();
   hideAllScreens();
+  const isTimeout = gameTimeLimit > 0 && timeRemaining <= 0;
   document.getElementById('screen-gameover').classList.remove('hidden');
+  // Update title based on reason
+  const titleEl = document.getElementById('screen-gameover').querySelector('.neon-title');
+  const subEl = document.getElementById('screen-gameover').querySelector('.neon-subtitle');
+  if (isTimeout) {
+    titleEl.textContent = 'TIME EXPIRED';
+    titleEl.style.color = '#ff9900';
+    titleEl.style.textShadow = '0 0 10px #ff9900, 0 0 30px #ff9900';
+    subEl.textContent = '// TIME LIMIT REACHED //';
+  } else {
+    titleEl.textContent = 'FIREWALL BREACHED';
+    titleEl.style.color = '#ff0055';
+    titleEl.style.textShadow = '0 0 10px #ff0055, 0 0 30px #ff0055';
+    subEl.textContent = '// SYSTEM COMPROMISED //';
+  }
   const cipherBreakdown = Object.entries(cipherStats)
     .filter(([c, s]) => s.total > 0)
     .map(([c, s]) => {
@@ -1587,9 +1749,11 @@ function showGameOver() {
       return `<div><div class="stat-label">${CIPHER_LABELS[c]}</div><div class="stat-value" style="font-size:1.1em;">${acc}% <span style="font-size:0.7em;color:#888;">(weak: ${weak})</span></div></div>`;
     })
     .join('');
+  const timeInfo = gameTimeLimit > 0 ? `<div><div class="stat-label">Time Left</div><div class="stat-value">${Math.max(0, timeRemaining)}s</div></div>` : '';
   document.getElementById('gameover-stats').innerHTML = `
     <div><div class="stat-label">Final Score</div><div class="stat-value">${score.toLocaleString()}</div></div>
     <div><div class="stat-label">Stage Reached</div><div class="stat-value">${currentStage+1} / ${STAGES.length}</div></div>
+    ${timeInfo}
     <div><div class="stat-label">Neutralized</div><div class="stat-value">${totalNeutralized}</div></div>
     <div><div class="stat-label">Max Combo</div><div class="stat-value">×${maxCombo}</div></div>
     <div style="grid-column: 1 / -1; border-top: 1px solid #2a3556; padding-top: 0.8em; margin-top: 0.5em;">
@@ -1613,10 +1777,12 @@ function showWin() {
       return `<div><div class="stat-label">${CIPHER_LABELS[c]}</div><div class="stat-value" style="font-size:1.1em;">${acc}% <span style="font-size:0.7em;color:#888;">(weak: ${weak})</span></div></div>`;
     })
     .join('');
+  const timeInfo = gameTimeLimit > 0 ? `<div><div class="stat-label">Time Left</div><div class="stat-value">${timeRemaining}s</div></div>` : '';
   document.getElementById('win-stats').innerHTML = `
     <div><div class="stat-label">Final Score</div><div class="stat-value">${score.toLocaleString()}</div></div>
     <div><div class="stat-label">Neutralized</div><div class="stat-value">${totalNeutralized}</div></div>
     <div><div class="stat-label">Max Combo</div><div class="stat-value">×${maxCombo}</div></div>
+    ${timeInfo}
     <div><div class="stat-label">Rating</div><div class="stat-value">${score>80000?'S':score>50000?'A':score>30000?'B':'C'}</div></div>
     <div style="grid-column: 1 / -1; border-top: 1px solid #2a3556; padding-top: 0.8em; margin-top: 0.5em;">
       <div class="stat-label" style="margin-bottom: 0.5em;">CIPHER BREAKDOWN</div>
@@ -1628,7 +1794,6 @@ function showWin() {
 function startGame() {
   initAudio();
   score = 0;
-  lives = 3;
   combo = 0;
   maxCombo = 0;
   totalNeutralized = 0;
@@ -1636,6 +1801,8 @@ function startGame() {
   threats = [];
   particles = [];
   comboFlashes = [];
+  lives = gameLives === 0 ? 9999 : gameLives;  // 0 = infinite
+  timeRemaining = gameTimeLimit > 0 ? gameTimeLimit : 0;
   startStage();
 }
 
@@ -1649,6 +1816,11 @@ function startStage() {
   stageConfig = STAGES[currentStage];
   showGame();
   updateHUD();
+  // Show timer if time limit is set
+  const timerDisplay = document.getElementById('timer-display');
+  if (timerDisplay) {
+    timerDisplay.style.display = gameTimeLimit > 0 ? 'block' : 'none';
+  }
 }
 
 function nextStage() {
@@ -1782,36 +1954,41 @@ document.getElementById('btn-next-stage').addEventListener('click', () => { init
 document.getElementById('btn-restart').addEventListener('click', () => { initAudio(); startGame(); });
 document.getElementById('btn-play-again').addEventListener('click', () => { initAudio(); startGame(); });
 
-// Speed slider listeners
-const speedSlider = document.getElementById('speedSlider');
-if (speedSlider) {
-  speedSlider.addEventListener('input', () => setSpeed(parseInt(speedSlider.value)));
-}
-const speedSliderGame = document.getElementById('speedSliderGame');
-if (speedSliderGame) {
-  speedSliderGame.addEventListener('input', () => setSpeed(parseInt(speedSliderGame.value)));
+// === Settings sliders ===
+function initSlider(id, setFn, parseFn) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => setFn(parseFn(el.value)));
 }
 
-// Speed toggle button (in-game)
-const speedToggle = document.getElementById('btn-speed-toggle');
-const speedOverlay = document.getElementById('speed-overlay');
-const speedToggleWrap = document.getElementById('speed-toggle-wrap');
-if (speedToggle && speedOverlay) {
-  speedToggle.addEventListener('click', () => {
-    speedOverlay.style.display = speedOverlay.style.display === 'flex' ? 'none' : 'flex';
+initSlider('speedSlider', setSpeed, parseInt);
+initSlider('speedSliderGame', setSpeed, parseInt);
+initSlider('livesSlider', setLives, parseInt);
+initSlider('livesSliderGame', setLives, parseInt);
+initSlider('timeSlider', setTime, parseInt);
+initSlider('timeSliderGame', setTime, parseInt);
+
+// Settings toggle button (in-game)
+const settingsToggle = document.getElementById('btn-settings-toggle');
+const settingsOverlay = document.getElementById('settings-overlay');
+const settingsToggleWrap = document.getElementById('settings-toggle-wrap');
+if (settingsToggle && settingsOverlay) {
+  settingsToggle.addEventListener('click', () => {
+    settingsOverlay.style.display = settingsOverlay.style.display === 'flex' ? 'none' : 'flex';
   });
 }
-// Click outside speed overlay to close it
+// Click outside settings overlay to close it
 document.addEventListener('click', (e) => {
-  if (speedOverlay && speedOverlay.style.display === 'flex' &&
-      !speedOverlay.contains(e.target) &&
-      e.target !== speedToggle) {
-    speedOverlay.style.display = 'none';
+  if (settingsOverlay && settingsOverlay.style.display === 'flex' &&
+      !settingsOverlay.contains(e.target) &&
+      e.target !== settingsToggle) {
+    settingsOverlay.style.display = 'none';
   }
 });
 
-// Initialize speed display
+// Initialize default settings display
 setSpeed(5);
+setLives(3);
+setTime(0);
 
 // ============================================================
 // MAIN LOOP
@@ -1857,6 +2034,20 @@ function gameLoop(ts) {
   drawGrid();
 
   if (gameState === STATES.PLAY) {
+    // Timer countdown
+    if (gameTimeLimit > 0 && timeRemaining > 0) {
+      timerAccum += dt;
+      if (timerAccum >= 1) {
+        timerAccum -= 1;
+        timeRemaining--;
+        updateHUD();
+        if (timeRemaining <= 0) {
+          // Time's up — game over
+          setTimeout(() => showGameOver(), 400);
+        }
+      }
+    }
+
     // Spawn threats
     const cfg = STAGES[currentStage];
     const speedMult = getSpeedMultiplier();
